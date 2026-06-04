@@ -1,0 +1,239 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  suspended
+  deleted
+}
+
+enum EmailProvider {
+  gmail
+  outlook
+  yahoo
+  icloud
+  imap_generic
+}
+
+enum LinkStatus {
+  connected
+  syncing
+  error
+  revoked
+}
+
+enum OrderSource {
+  email_parse
+  manual
+  forward_in
+}
+
+enum ReturnStatus {
+  draft
+  ready_to_ship
+  in_transit
+  delivered_to_merchant
+  awaiting_refund
+  refund_completed
+  expired
+  cancelled
+}
+
+enum RefundSource {
+  plaid
+  user
+  merchant_email
+  unknown
+}
+
+enum TrackingStatus {
+  unknown
+  pre_transit
+  in_transit
+  out_for_delivery
+  delivered
+  delivered_to_merchant
+  exception
+  return_to_sender
+}
+
+model User {
+  id                   String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  externalAuthId       String    @unique @map("external_auth_id")
+  email                String    @unique
+  displayName          String?   @map("display_name")
+  timezone             String    @default("America/New_York")
+  quietHoursStart      String    @default("22:00") @map("quiet_hours_start")
+  quietHoursEnd        String    @default("08:00") @map("quiet_hours_end")
+  status               UserStatus @default(active)
+  plaidUserId          String?   @map("plaid_user_id")
+  plaidAccessTokenEnc  Bytes?    @map("plaid_access_token_enc")
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  deletedAt            DateTime? @map("deleted_at") @db.Timestamptz
+
+  linkedEmails   LinkedEmail[]
+  orders         Order[]
+  returns        Return[]
+  refundStatuses RefundStatus[]
+  notifications  NotificationJob[]
+
+  @@map("users")
+}
+
+model LinkedEmail {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String        @map("user_id") @db.Uuid
+  provider           EmailProvider
+  emailAddress       String        @map("email_address")
+  status             LinkStatus    @default(connected)
+  oauthRefreshEnc    Bytes         @map("oauth_refresh_enc")
+  oauthRefreshKeyId  String        @map("oauth_refresh_key_id")
+  scopesGranted      String[]      @map("scopes_granted")
+  lastSyncCursor     String?       @map("last_sync_cursor")
+  lastSyncAt         DateTime?     @map("last_sync_at") @db.Timestamptz
+  lastError          String?       @map("last_error")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([userId, emailAddress])
+  @@map("linked_emails")
+}
+
+model Order {
+  id              String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  linkedEmailId   String?     @map("linked_email_id") @db.Uuid
+  merchantName    String      @map("merchant_name")
+  merchantDomain  String?     @map("merchant_domain")
+  externalOrderId String      @map("external_order_id")
+  orderDate       DateTime?   @map("order_date") @db.Date
+  currency        String      @default("USD") @db.Char(3)
+  totalAmount     Decimal?    @map("total_amount") @db.Decimal(12, 2)
+  source          OrderSource @default(email_parse)
+  rawConfidence   Decimal?    @map("raw_confidence") @db.Decimal(4, 3)
+  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedEmail LinkedEmail? @relation(fields: [linkedEmailId], references: [id], onDelete: SetNull)
+  returns     Return[]
+
+  @@unique([userId, merchantName, externalOrderId])
+  @@map("orders")
+}
+
+model Return {
+  id                     String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId                 String       @map("user_id") @db.Uuid
+  orderId                String       @map("order_id") @db.Uuid
+  status                 ReturnStatus @default(draft)
+  returnDeadlineAt       DateTime?    @map("return_deadline_at") @db.Timestamptz
+  returnWindowDays       Int?         @map("return_window_days")
+  itemSummary            String       @map("item_summary")
+  expectedRefundAmount   Decimal?     @map("expected_refund_amount") @db.Decimal(12, 2)
+  qrPayload              String?      @map("qr_payload")
+  qrFormat               String?      @map("qr_format")
+  qrExpiresAt            DateTime?    @map("qr_expires_at") @db.Timestamptz
+  walletAppleSerial      String?      @unique @map("wallet_apple_serial")
+  walletGoogleObjectId   String?      @unique @map("wallet_google_object_id")
+  trackingNumber         String?      @map("tracking_number")
+  carrier                String?
+  droppedOffAt           DateTime?    @map("dropped_off_at") @db.Timestamptz
+  deliveredToMerchantAt  DateTime?    @map("delivered_to_merchant_at") @db.Timestamptz
+  snoozeCount            Int          @default(0) @map("snooze_count")
+  createdAt              DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime     @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  trackingLogs   TrackingLog[]
+  refundStatus   RefundStatus?
+  notifications  NotificationJob[]
+
+  @@map("returns")
+}
+
+model TrackingLog {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  returnId        String         @map("return_id") @db.Uuid
+  trackingNumber  String         @map("tracking_number")
+  carrier         String
+  status          TrackingStatus
+  statusDetail    String?        @map("status_detail")
+  locationCity    String?        @map("location_city")
+  locationState   String?        @map("location_state")
+  eventAt         DateTime       @map("event_at") @db.Timestamptz
+  provider        String         @default("easypost")
+  providerEventId String?        @map("provider_event_id")
+  rawPayload      Json?          @map("raw_payload")
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  return Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@unique([returnId, providerEventId])
+  @@map("tracking_logs")
+}
+
+model RefundStatus {
+  id                 String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  returnId           String        @unique @map("return_id") @db.Uuid
+  userId             String        @map("user_id") @db.Uuid
+  status             String        @default("pending")
+  expectedAmount     Decimal?      @map("expected_amount") @db.Decimal(12, 2)
+  actualAmount       Decimal?      @map("actual_amount") @db.Decimal(12, 2)
+  currency           String        @default("USD") @db.Char(3)
+  source             RefundSource?
+  plaidTransactionId String?       @map("plaid_transaction_id")
+  postedAt           DateTime?     @map("posted_at") @db.Timestamptz
+  matchConfidence    Decimal?      @map("match_confidence") @db.Decimal(4, 3)
+  userConfirmedAt    DateTime?     @map("user_confirmed_at") @db.Timestamptz
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  return Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refund_status")
+}
+
+model NotificationJob {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  returnId    String   @map("return_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  triggerId   String   @map("trigger_id")
+  scheduledAt DateTime @map("scheduled_at") @db.Timestamptz
+  status      String   @default("pending")
+  bullJobId   String?  @map("bull_job_id")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  return Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([returnId, triggerId])
+  @@map("notification_jobs")
+}
+
+model ParseReviewQueue {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  linkedEmailId String   @map("linked_email_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  messageId     String   @map("message_id")
+  merchantGuess String?  @map("merchant_guess")
+  rawSnippet    String?  @map("raw_snippet")
+  confidence    Decimal  @db.Decimal(4, 3)
+  status        String   @default("pending")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([linkedEmailId, messageId])
+  @@map("parse_review_queue")
+}
