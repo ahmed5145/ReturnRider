@@ -1,0 +1,27 @@
+{
+  "expo": {
+    "name": "ReturnRider",
+    "slug": "returnrider",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "returnrider",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.returnrider.app",
+      "infoPlist": {
+        "NSUserTrackingUsageDescription": "ReturnRider does not track you across other apps."
+      }
+    },
+    "android": {
+      "package": "com.returnrider.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1a1a2e"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}
