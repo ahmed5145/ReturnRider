@@ -10,6 +10,7 @@ import { PlaidModule } from './plaid/plaid.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ReturnsModule } from './returns/returns.module';
 import { TrackingModule } from './tracking/tracking.module';
+import { UsersModule } from './users/users.module';
 import { WalletModule } from './wallet/wallet.module';
 
 @Module({
@@ -29,6 +30,7 @@ import { WalletModule } from './wallet/wallet.module';
     PlaidModule,
     NotificationsModule,
     LegalModule,
+    UsersModule,
   ],
   controllers: [HealthController],
 })
