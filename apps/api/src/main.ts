@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
+  app.enableCors({ origin: true, credentials: true });
   app.setGlobalPrefix('api/v1', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },
@@ -30,8 +31,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = process.env.PORT ?? 3000;
-  await app.listen(port);
-  console.log(`ReturnRider API listening on http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  console.log(`ReturnRider API listening on http://localhost:${port} (LAN: use your PC IPv4)`);
 }
 
 bootstrap();
