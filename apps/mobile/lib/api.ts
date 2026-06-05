@@ -1,5 +1,5 @@
-import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 const TOKEN_KEY = 'auth_token';
@@ -40,11 +40,37 @@ export async function setAuthToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
+export async function ensureAuthToken(): Promise<string> {
+  let token = await getAuthToken();
+  if (!token) {
+    const dev = await api.devToken('dev-user', 'dev@returnrider.com');
+    await setAuthToken(dev.token);
+    token = dev.token;
+  }
+  return token;
+}
+
 export const api = {
   devToken: (sub: string, email: string) =>
     request<{ token: string }>('/auth/dev-token', {
       method: 'POST',
       body: JSON.stringify({ sub, email }),
+    }),
+
+  getMe: () =>
+    request<{
+      onboarding_completed: boolean;
+      linked_emails: Array<{ id: string; email_address: string; status: string }>;
+      returns_count: number;
+    }>('/users/me'),
+
+  completeOnboarding: () =>
+    request('/users/onboarding-complete', { method: 'POST', body: '{}' }),
+
+  registerPushToken: (expo_push_token: string) =>
+    request('/users/push-token', {
+      method: 'POST',
+      body: JSON.stringify({ expo_push_token }),
     }),
 
   getActiveReturns: () =>
@@ -58,12 +84,46 @@ export const api = {
 
   getReturn: (id: string) => request<Record<string, unknown>>(`/returns/${id}`),
 
+  createManualReturn: (payload: {
+    merchant_name: string;
+    external_order_id: string;
+    item_summary: string;
+    return_deadline_at?: string;
+    return_window_days?: number;
+    expected_refund_amount?: number;
+  }) =>
+    request<{ id: string }>('/returns/manual', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  parseReceiptText: (text: string) =>
+    request<{ parsed: Record<string, unknown> | null; message?: string }>(
+      '/returns/parse-receipt-text',
+      { method: 'POST', body: JSON.stringify({ text }) },
+    ),
+
+  createFromReceiptText: (text: string) =>
+    request<{ id: string }>('/returns/from-receipt-text', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+
+  listEmails: () =>
+    request<{ data: Array<{ id: string; email_address: string; provider: string; status: string }> }>(
+      '/emails',
+    ),
+
+  disconnectEmail: (id: string) =>
+    request(`/emails/${id}`, { method: 'DELETE' }),
+
   connectEmail: (payload: {
     provider: string;
     authorization_code: string;
     redirect_uri: string;
     code_verifier: string;
     email_hint?: string;
+    sync_days?: 90 | 180;
   }) =>
     request('/emails/connect', {
       method: 'POST',
