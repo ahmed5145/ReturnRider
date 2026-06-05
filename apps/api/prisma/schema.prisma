@@ -74,6 +74,8 @@ model User {
   status               UserStatus @default(active)
   plaidUserId          String?   @map("plaid_user_id")
   plaidAccessTokenEnc  Bytes?    @map("plaid_access_token_enc")
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz
+  expoPushToken        String?   @map("expo_push_token")
   createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
   deletedAt            DateTime? @map("deleted_at") @db.Timestamptz
@@ -99,6 +101,7 @@ model LinkedEmail {
   lastSyncCursor     String?       @map("last_sync_cursor")
   lastSyncAt         DateTime?     @map("last_sync_at") @db.Timestamptz
   lastError          String?       @map("last_error")
+  syncWindowDays     Int           @default(90) @map("sync_window_days")
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
