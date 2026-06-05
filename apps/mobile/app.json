@@ -21,7 +21,14 @@
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-notifications",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow ReturnRider to photograph receipts for manual returns."
+        }
+      ]
     ]
   }
 }
