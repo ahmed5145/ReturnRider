@@ -3,18 +3,22 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "apps/*",
+    "apps/api",
     "packages/*"
   ],
   "scripts": {
     "api:dev": "npm run dev -w @returnrider/api",
     "api:build": "npm run build -w @returnrider/api",
-    "mobile:start": "npm run start -w @returnrider/mobile",
+    "mobile:start": "cd apps/mobile && npm start",
     "db:migrate": "docker compose exec -T postgres psql -U returnrider -d returnrider -f /migrations/001_initial.sql",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   }
 }

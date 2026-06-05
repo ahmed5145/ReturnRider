@@ -41,14 +41,21 @@ Legal: http://localhost:3000/legal/terms · http://localhost:3000/legal/privacy
 Requires **Expo SDK 54** (matches current Expo Go). If you see an SDK mismatch, run `npx expo install --fix` in `apps/mobile`.
 
 ```bash
+# API (from repo root — npm workspace)
+cd ReturnRider
+npm install
+
+# Mobile (standalone — NOT a workspace; avoids Expo Go native module errors)
 cd apps/mobile
-cp .env.example .env
+copy .env.example .env
 npm install
 npx expo install --fix
-npm start
+npx expo start -c
 ```
 
-Use your PC's LAN IP instead of `localhost` when testing on a physical device.
+**Ports:** `8081` = Expo app (Metro). `3000` = API only (not the mobile UI).
+
+**Physical phone:** set `EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:3000/api/v1` in `apps/mobile/.env` (`ipconfig` → IPv4). Phone and PC must be on the same Wi‑Fi. Keep `npm run dev` running in `apps/api`.
 
 ## Environment
 

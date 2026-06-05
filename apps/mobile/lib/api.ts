@@ -1,6 +1,8 @@
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
+const TOKEN_KEY = 'auth_token';
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = await getAuthToken();
@@ -22,11 +24,20 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function getAuthToken(): Promise<string | null> {
-  return SecureStore.getItemAsync('auth_token');
+  if (Platform.OS === 'web') {
+    return typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  }
+  return SecureStore.getItemAsync(TOKEN_KEY);
 }
 
 export async function setAuthToken(token: string): Promise<void> {
-  await SecureStore.setItemAsync('auth_token', token);
+  if (Platform.OS === 'web') {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+    return;
+  }
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
 export const api = {
