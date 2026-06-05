@@ -6,13 +6,15 @@ import * as path from 'path';
 @Controller('legal')
 export class LegalController {
   private readLegal(filename: string): string {
-    const legalPath = path.join(__dirname, '..', '..', '..', '..', 'legal', filename);
-    const altPath = path.join(process.cwd(), 'legal', filename);
-    if (fs.existsSync(legalPath)) {
-      return fs.readFileSync(legalPath, 'utf8');
-    }
-    if (fs.existsSync(altPath)) {
-      return fs.readFileSync(altPath, 'utf8');
+    const candidates = [
+      path.join(__dirname, '..', '..', '..', '..', 'legal', filename),
+      path.join(process.cwd(), '..', '..', 'legal', filename),
+      path.join(process.cwd(), 'legal', filename),
+    ];
+    for (const filePath of candidates) {
+      if (fs.existsSync(filePath)) {
+        return fs.readFileSync(filePath, 'utf8');
+      }
     }
     return 'Document not found.';
   }

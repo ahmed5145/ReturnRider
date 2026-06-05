@@ -33,7 +33,19 @@ curl -X POST http://localhost:3000/api/v1/auth/dev-token \
 Seed demo data: `cd apps/api && npx ts-node src/seed/seed.ts`
 
 API: http://localhost:3000  
-Docs: http://localhost:3000/api/docs
+Docs: http://localhost:3000/api/docs  
+Legal: http://localhost:3000/legal/terms · http://localhost:3000/legal/privacy
+
+### Mobile (no Docker)
+
+```bash
+cd apps/mobile
+cp .env.example .env
+npm install
+npm start
+```
+
+Use your PC's LAN IP instead of `localhost` when testing on a physical device.
 
 ## Environment
 
