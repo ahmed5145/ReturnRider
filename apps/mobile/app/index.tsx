@@ -7,8 +7,9 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Link } from 'expo-router';
-import { api, getAuthToken, setAuthToken } from '../lib/api';
+import { Link, router } from 'expo-router';
+import { api, ensureAuthToken } from '../lib/api';
+import { registerForPushNotifications } from '../lib/notifications';
 
 interface ReturnSummary {
   id: string;
@@ -28,13 +29,14 @@ export default function HomeScreen() {
 
   useEffect(() => {
     (async () => {
-      let token = await getAuthToken();
-      if (!token) {
-        const dev = await api.devToken('dev-user', 'dev@returnrider.com');
-        await setAuthToken(dev.token);
-        token = dev.token;
-      }
       try {
+        await ensureAuthToken();
+        const me = await api.getMe();
+        if (!me.onboarding_completed) {
+          router.replace('/welcome');
+          return;
+        }
+        await registerForPushNotifications();
         const res = await api.getActiveReturns();
         setReturns(res.data);
       } catch (e) {
@@ -55,7 +57,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>ReturnRider</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>ReturnRider</Text>
+        <Link href="/settings">
+          <Text style={styles.settings}>Settings</Text>
+        </Link>
+      </View>
       <Text style={styles.subtitle}>Active returns & deadlines</Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
@@ -64,9 +71,22 @@ export default function HomeScreen() {
         data={returns}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text style={styles.empty}>
-            No active returns. Connect your email to get started.
-          </Text>
+          <View style={styles.emptyBox}>
+            <Text style={styles.emptyTitle}>No returns yet</Text>
+            <Text style={styles.empty}>
+              Connect Gmail to auto-import from receipts, or add a return manually if you
+              have a paper receipt.
+            </Text>
+            <Link href="/onboarding/connect" style={styles.emptyLink}>
+              Connect email
+            </Link>
+            <Link href="/add-return" style={styles.emptyLink}>
+              Add manually
+            </Link>
+            <Link href="/scan-receipt" style={styles.emptyLink}>
+              Scan receipt
+            </Link>
+          </View>
         }
         renderItem={({ item }) => (
           <Link href={`/returns/${item.id}`} asChild>
@@ -83,18 +103,25 @@ export default function HomeScreen() {
         )}
       />
 
-      <Link href="/onboarding" style={styles.cta}>
-        <Text style={styles.ctaText}>Connect Email</Text>
-      </Link>
+      <View style={styles.actions}>
+        <Link href="/add-return" style={styles.actionBtn}>
+          <Text style={styles.actionText}>+ Add return</Text>
+        </Link>
+        <Link href="/scan-receipt" style={[styles.actionBtn, styles.actionSecondary]}>
+          <Text style={styles.actionText}>Scan receipt</Text>
+        </Link>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60 },
+  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: '#16213e' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#16213e' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 28, fontWeight: '700', color: '#fff' },
-  subtitle: { fontSize: 14, color: '#a0a0b0', marginBottom: 20 },
+  settings: { color: '#e94560', fontSize: 14 },
+  subtitle: { fontSize: 14, color: '#a0a0b0', marginBottom: 20, marginTop: 4 },
   card: {
     backgroundColor: '#1a1a2e',
     borderRadius: 12,
@@ -106,14 +133,19 @@ const styles = StyleSheet.create({
   merchant: { fontSize: 18, fontWeight: '600', color: '#fff' },
   item: { fontSize: 14, color: '#c0c0d0', marginTop: 4 },
   meta: { fontSize: 12, color: '#e94560', marginTop: 8 },
-  empty: { color: '#888', textAlign: 'center', marginTop: 40 },
+  emptyBox: { padding: 20, alignItems: 'center' },
+  emptyTitle: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  empty: { color: '#888', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
+  emptyLink: { color: '#e94560', marginVertical: 6, fontSize: 15 },
   error: { color: '#ff6b6b', marginBottom: 12 },
-  cta: {
+  actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  actionBtn: {
+    flex: 1,
     backgroundColor: '#e94560',
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 12,
   },
-  ctaText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  actionSecondary: { backgroundColor: '#1a1a2e', borderWidth: 1, borderColor: '#e94560' },
+  actionText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });
