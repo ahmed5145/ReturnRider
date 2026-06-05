@@ -42,6 +42,8 @@ export class EmailsService {
 
     const { ciphertext, keyId } = this.crypto.encrypt(tokens.refresh_token!);
 
+    const syncWindowDays = dto.sync_days === 180 ? 180 : 90;
+
     const linked = await this.prisma.linkedEmail.upsert({
       where: {
         userId_emailAddress: { userId, emailAddress },
@@ -54,12 +56,14 @@ export class EmailsService {
         oauthRefreshEnc: ciphertext,
         oauthRefreshKeyId: keyId,
         scopesGranted: [GMAIL_READONLY_SCOPE, 'openid', 'email'],
+        syncWindowDays,
       },
       update: {
         oauthRefreshEnc: ciphertext,
         oauthRefreshKeyId: keyId,
         status: 'connected',
         scopesGranted: [GMAIL_READONLY_SCOPE, 'openid', 'email'],
+        syncWindowDays,
       },
     });
 
@@ -72,6 +76,38 @@ export class EmailsService {
       status: 'syncing' as const,
       sync_job_id: job.id ?? String(job.id),
       scopes_granted: linked.scopesGranted,
+      sync_window_days: syncWindowDays,
     };
+  }
+
+  async listLinked(userId: string) {
+    const emails = await this.prisma.linkedEmail.findMany({
+      where: { userId, status: { not: 'revoked' } },
+      orderBy: { createdAt: 'desc' },
+    });
+    return {
+      data: emails.map((e) => ({
+        id: e.id,
+        email_address: e.emailAddress,
+        provider: e.provider,
+        status: e.status,
+        sync_window_days: e.syncWindowDays,
+        last_sync_at: e.lastSyncAt?.toISOString() ?? null,
+      })),
+    };
+  }
+
+  async disconnect(userId: string, linkedEmailId: string) {
+    const linked = await this.prisma.linkedEmail.findFirst({
+      where: { id: linkedEmailId, userId },
+    });
+    if (!linked) {
+      throw new BadRequestException('Linked email not found');
+    }
+    await this.prisma.linkedEmail.update({
+      where: { id: linkedEmailId },
+      data: { status: 'revoked' },
+    });
+    return { disconnected: true };
   }
 }

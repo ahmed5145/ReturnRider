@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsOptional, IsString, IsUrl } from 'class-validator';
+import { IsEmail, IsEnum, IsIn, IsOptional, IsString } from 'class-validator';
 
 export enum EmailProviderDto {
   gmail = 'gmail',
@@ -29,4 +29,9 @@ export class EmailConnectDto {
   @IsOptional()
   @IsEmail()
   email_hint?: string;
+
+  @ApiPropertyOptional({ enum: [90, 180], default: 90 })
+  @IsOptional()
+  @IsIn([90, 180])
+  sync_days?: 90 | 180;
 }

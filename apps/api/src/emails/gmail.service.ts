@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { google } from 'googleapis';
+import { buildCommerceQuery } from './gmail-query';
 
-export const GMAIL_COMMERCE_QUERY =
-  'newer_than:90d (subject:(order OR receipt OR confirmation OR return OR refund OR shipment OR tracking) OR from:(noreply OR no-reply OR orders OR shipping OR returns))';
+export { buildCommerceQuery, GMAIL_COMMERCE_QUERY } from './gmail-query';
 
 export const GMAIL_READONLY_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 
@@ -45,11 +45,15 @@ export class GmailService {
     return profile.data.emailAddress ?? '';
   }
 
-  async listCommerceMessages(refreshToken: string, pageToken?: string) {
+  async listCommerceMessages(
+    refreshToken: string,
+    syncWindowDays: 90 | 180 = 90,
+    pageToken?: string,
+  ) {
     const gmail = this.getGmailClient(refreshToken);
     const list = await gmail.users.messages.list({
       userId: 'me',
-      q: GMAIL_COMMERCE_QUERY,
+      q: buildCommerceQuery(syncWindowDays),
       maxResults: 50,
       pageToken,
     });

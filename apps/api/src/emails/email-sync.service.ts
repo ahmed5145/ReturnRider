@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { CryptoService } from '../common/crypto.service';
 import { isCommerceEmail } from '../parsers/commerce-classifier';
 import { parseReceipt } from '../parsers/merchants';
+import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GmailService } from './gmail.service';
 
@@ -18,6 +19,7 @@ export class EmailSyncService {
     private readonly prisma: PrismaService,
     private readonly crypto: CryptoService,
     private readonly gmail: GmailService,
+    private readonly notificationScheduler: NotificationSchedulerService,
     @InjectQueue('email-sync') private readonly emailSyncQueue: Queue,
   ) {}
 
@@ -42,11 +44,12 @@ export class EmailSyncService {
 
     try {
       const refreshToken = this.crypto.decrypt(linked.oauthRefreshEnc);
+      const syncDays = (linked.syncWindowDays === 180 ? 180 : 90) as 90 | 180;
       let pageToken: string | undefined;
       let processed = 0;
 
       do {
-        const list = await this.gmail.listCommerceMessages(refreshToken, pageToken);
+        const list = await this.gmail.listCommerceMessages(refreshToken, syncDays, pageToken);
         const messages = list.messages ?? [];
 
         for (const msg of messages) {
@@ -188,7 +191,7 @@ export class EmailSyncService {
         where: { orderId: order.id, userId },
       });
       if (!existing) {
-        await this.prisma.return.create({
+        const created = await this.prisma.return.create({
           data: {
             userId,
             orderId: order.id,
@@ -200,7 +203,10 @@ export class EmailSyncService {
             qrPayload: parsed.qrPayload,
             qrFormat: parsed.qrFormat,
           },
+          include: { order: true },
         });
+        const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
+        await this.notificationScheduler.scheduleForReturn(created, user);
       }
     }
   }
