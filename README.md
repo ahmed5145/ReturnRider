@@ -38,10 +38,13 @@ Legal: http://localhost:3000/legal/terms · http://localhost:3000/legal/privacy
 
 ### Mobile (no Docker)
 
+Requires **Expo SDK 54** (matches current Expo Go). If you see an SDK mismatch, run `npx expo install --fix` in `apps/mobile`.
+
 ```bash
 cd apps/mobile
 cp .env.example .env
 npm install
+npx expo install --fix
 npm start
 ```
 
