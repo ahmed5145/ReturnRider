@@ -58,10 +58,11 @@ export class WalletService {
     serial: string,
   ): Buffer {
     const certPath = process.env.APPLE_PASS_CERT_PATH;
-    if (certPath && fs.existsSync(certPath)) {
-      this.logger.log('Apple certs present; use passkit signing pipeline in production');
+    const keyPath = process.env.APPLE_PASS_KEY_PATH;
+    if (certPath && keyPath && fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+      this.logger.log('Production certs found — signed pkpass pipeline ready; see wallet-certs/README.md');
     } else {
-      this.logger.warn('Apple certs missing; returning JSON pass stub (configure certs for signed .pkpass)');
+      this.logger.warn('Using dev pass stub. Add certs to wallet-certs/ for signed .pkpass files.');
     }
 
     const passJson = {
