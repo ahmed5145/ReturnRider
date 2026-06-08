@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
+import { colors } from '../lib/theme';
 
 export default function AddReturnScreen() {
   const [merchant, setMerchant] = useState('');
@@ -37,29 +38,67 @@ export default function AddReturnScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.pad}>
+      <Link href="/" style={styles.back}>
+        <Text style={styles.backText}>← Dashboard</Text>
+      </Link>
       <Text style={styles.title}>Add return manually</Text>
       <Text style={styles.sub}>
         No email receipt? Enter details from your paper receipt or order confirmation.
       </Text>
 
       <Text style={styles.label}>Store name</Text>
-      <TextInput style={styles.input} value={merchant} onChangeText={setMerchant} placeholder="Target" placeholderTextColor="#666" />
+      <TextInput
+        style={styles.input}
+        value={merchant}
+        onChangeText={setMerchant}
+        placeholder="Target"
+        placeholderTextColor={colors.textDim}
+      />
 
       <Text style={styles.label}>Order number</Text>
-      <TextInput style={styles.input} value={orderId} onChangeText={setOrderId} placeholder="123456789" placeholderTextColor="#666" />
+      <TextInput
+        style={styles.input}
+        value={orderId}
+        onChangeText={setOrderId}
+        placeholder="123456789"
+        placeholderTextColor={colors.textDim}
+      />
 
       <Text style={styles.label}>Item description</Text>
-      <TextInput style={styles.input} value={item} onChangeText={setItem} placeholder="Blue running shoes" placeholderTextColor="#666" />
+      <TextInput
+        style={styles.input}
+        value={item}
+        onChangeText={setItem}
+        placeholder="Blue running shoes"
+        placeholderTextColor={colors.textDim}
+      />
 
       <Text style={styles.label}>Expected refund ($)</Text>
-      <TextInput style={styles.input} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="49.99" placeholderTextColor="#666" />
+      <TextInput
+        style={styles.input}
+        value={amount}
+        onChangeText={setAmount}
+        keyboardType="decimal-pad"
+        placeholder="49.99"
+        placeholderTextColor={colors.textDim}
+      />
 
       <Text style={styles.label}>Return window (days)</Text>
-      <TextInput style={styles.input} value={days} onChangeText={setDays} keyboardType="number-pad" placeholderTextColor="#666" />
+      <TextInput
+        style={styles.input}
+        value={days}
+        onChangeText={setDays}
+        keyboardType="number-pad"
+        placeholderTextColor={colors.textDim}
+      />
 
       {error && <Text style={styles.error}>{error}</Text>}
 
-      <Pressable style={styles.btn} onPress={submit} disabled={saving || !merchant || !orderId || !item}>
+      <Pressable
+        style={styles.btn}
+        onPress={submit}
+        disabled={saving || !merchant || !orderId || !item}
+      >
         <Text style={styles.btnText}>{saving ? 'Saving…' : 'Save return'}</Text>
       </Pressable>
     </ScrollView>
@@ -67,26 +106,29 @@ export default function AddReturnScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#16213e' },
-  pad: { padding: 24, paddingTop: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  sub: { color: '#aaa', marginBottom: 20, marginTop: 8, lineHeight: 20 },
-  label: { color: '#ccc', marginTop: 12, marginBottom: 6 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  pad: { padding: 24, paddingTop: 48 },
+  back: { marginBottom: 16 },
+  backText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  title: { fontSize: 22, fontWeight: '700', color: colors.text },
+  sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
+  label: { color: colors.textMuted, marginTop: 12, marginBottom: 6 },
   input: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: 10,
     padding: 12,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   error: { color: '#ff6b6b', marginTop: 12 },
   btn: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.accent,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 24,
+    marginBottom: 32,
   },
   btnText: { color: '#fff', fontWeight: '600' },
 });

@@ -53,7 +53,7 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 | **S4** | P11 + P9b | Staging deploy + onboarding polish | Public API URL; funnel events |
 | **S5+** | P12–P14 | Push (Android), wallet, integrations | Deferred until core loop proven |
 
-**Current sprint:** S3 (dashboard detail + settings polish)
+**Current sprint:** S4 (staging deploy + onboarding polish)
 
 ---
 
@@ -95,15 +95,16 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 
 ### API
 
-- Already exists: `GET /returns/active`, `POST /returns/:id/snooze`, refund confirm
+- [x] `GET /returns/:id` — snake_case detail payload with snooze/refund fields
+- [x] `POST /returns/:id/snooze`, `POST /returns/:id/confirm-refund`
 
 ### Mobile (S3)
 
-- [ ] Apply `lib/theme.ts` to home, settings, add-return, detail
-- [ ] Return cards: refund $, urgency colors, days-left pill
-- [ ] Return detail: snooze, confirm refund, wallet CTAs
-- [ ] Status filter chips on dashboard
-- [ ] Header: “$X in refunds to protect”
+- [x] Apply `lib/theme.ts` to home, settings, add-return, scan, detail
+- [x] Return cards: refund $, urgency colors, days-left pill
+- [x] Return detail: snooze, confirm refund, wallet CTAs
+- [x] Status filter chips on dashboard
+- [x] Header: “$X in refunds to protect”
 
 ---
 
@@ -178,6 +179,7 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 |------|--------|--------|
 | 2026-06-08 | — | Phase 2 roadmap locked |
 | 2026-06-08 | S1 | Sync stats, re-sync, parse-review API, incremental sync, mobile S2 screens |
+| 2026-06-08 | S3 | Dashboard filters/urgency, return detail actions, theme pass |
 
 ---
 

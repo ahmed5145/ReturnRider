@@ -12,6 +12,15 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
 import { registerForPushNotifications } from '../lib/notifications';
 import { colors } from '../lib/theme';
+import { formatDaysRemaining, getUrgencyColor } from '../lib/urgency';
+
+type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund';
+
+const FILTERS: { id: StatusFilter; label: string }[] = [
+  { id: 'all_active', label: 'All' },
+  { id: 'ready_to_ship', label: 'Ship soon' },
+  { id: 'awaiting_refund', label: 'Awaiting refund' },
+];
 
 interface ReturnSummary {
   id: string;
@@ -32,6 +41,7 @@ export default function HomeScreen() {
   const [reviewPending, setReviewPending] = useState(0);
   const [inboxSyncing, setInboxSyncing] = useState(false);
   const [linkedCount, setLinkedCount] = useState(0);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -48,7 +58,9 @@ export default function HomeScreen() {
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
       await registerForPushNotifications();
-      const res = await api.getActiveReturns();
+      const res = await api.getActiveReturns(
+        statusFilter === 'all_active' ? undefined : statusFilter,
+      );
       setReturns(res.data);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
@@ -61,7 +73,7 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       load();
-    }, []),
+    }, [statusFilter]),
   );
 
   if (loading) {
@@ -105,6 +117,25 @@ export default function HomeScreen() {
           ? `$${refundTotal.toFixed(0)} in refunds to protect`
           : 'Active returns & deadlines'}
       </Text>
+
+      <View style={styles.filters}>
+        {FILTERS.map((f) => (
+          <Pressable
+            key={f.id}
+            style={[styles.filterChip, statusFilter === f.id && styles.filterChipActive]}
+            onPress={() => setStatusFilter(f.id)}
+          >
+            <Text
+              style={[
+                styles.filterText,
+                statusFilter === f.id && styles.filterTextActive,
+              ]}
+            >
+              {f.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -152,22 +183,26 @@ export default function HomeScreen() {
             </Link>
           </View>
         }
-        renderItem={({ item }) => (
-          <Link href={`/returns/${item.id}`} asChild>
-            <Pressable style={styles.card}>
-              <Text style={styles.merchant}>{item.merchant_name}</Text>
-              <Text style={styles.item}>{item.item_summary}</Text>
-              <Text style={styles.meta}>
-                {item.days_remaining != null
-                  ? `${item.days_remaining} days left`
-                  : item.status}
-                {item.expected_refund_amount != null
-                  ? ` · $${item.expected_refund_amount.toFixed(2)}`
-                  : ''}
-              </Text>
-            </Pressable>
-          </Link>
-        )}
+        renderItem={({ item }) => {
+          const borderColor = getUrgencyColor(item.days_remaining);
+          return (
+            <Link href={`/returns/${item.id}`} asChild>
+              <Pressable style={[styles.card, { borderLeftColor: borderColor }]}>
+                <View style={styles.cardRow}>
+                  <Text style={styles.merchant}>{item.merchant_name}</Text>
+                  {item.has_wallet_pass && <Text style={styles.walletIcon}>📲</Text>}
+                </View>
+                <Text style={styles.item}>{item.item_summary}</Text>
+                <Text style={[styles.meta, { color: borderColor }]}>
+                  {formatDaysRemaining(item.days_remaining)}
+                  {item.expected_refund_amount != null
+                    ? ` · $${item.expected_refund_amount.toFixed(2)}`
+                    : ''}
+                </Text>
+              </Pressable>
+            </Link>
+          );
+        }}
       />
 
       <View style={styles.actions}>
@@ -207,16 +242,28 @@ const styles = StyleSheet.create({
   },
   reviewBannerTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
   reviewBannerSub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
-  subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 16, marginTop: 12 },
+  subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 8, marginTop: 12 },
+  filters: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+  filterText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
+  filterTextActive: { color: colors.accent },
   card: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
   },
-  merchant: { fontSize: 18, fontWeight: '600', color: colors.text },
+  cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  walletIcon: { fontSize: 16 },
+  merchant: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1 },
   item: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
   meta: { fontSize: 12, color: colors.accent, marginTop: 8 },
   emptyBox: { padding: 20, alignItems: 'center' },

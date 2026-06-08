@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
+import { colors } from '../lib/theme';
 
 export default function ScanReceiptScreen() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -84,7 +85,7 @@ export default function ScanReceiptScreen() {
         multiline
         value={rawText}
         onChangeText={setRawText}
-        placeholderTextColor="#666"
+        placeholderTextColor={colors.textDim}
       />
       <Pressable style={styles.secondary} onPress={onParse}>
         <Text style={styles.secondaryText}>Parse text</Text>
@@ -102,22 +103,22 @@ export default function ScanReceiptScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#16213e' },
-  pad: { padding: 24 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  pad: { padding: 24, paddingTop: 48 },
   camera: { flex: 1 },
-  overlay: { color: '#fff', textAlign: 'center', padding: 16, backgroundColor: '#1a1a2e' },
-  title: { fontSize: 20, fontWeight: '700', color: '#fff' },
-  sub: { color: '#aaa', marginVertical: 12, lineHeight: 20 },
+  overlay: { color: colors.text, textAlign: 'center', padding: 16, backgroundColor: colors.bgCard },
+  title: { fontSize: 20, fontWeight: '700', color: colors.text },
+  sub: { color: colors.textMuted, marginVertical: 12, lineHeight: 20 },
   input: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: 10,
     padding: 12,
-    color: '#fff',
+    color: colors.text,
     borderWidth: 1,
-    borderColor: '#333',
+    borderColor: colors.border,
   },
   btn: {
-    backgroundColor: '#e94560',
+    backgroundColor: colors.accent,
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -125,6 +126,6 @@ const styles = StyleSheet.create({
   },
   btnText: { color: '#fff', fontWeight: '600' },
   secondary: { padding: 12, alignItems: 'center' },
-  secondaryText: { color: '#e94560' },
-  parsed: { color: '#8f8', marginVertical: 8 },
+  secondaryText: { color: colors.accent },
+  parsed: { color: colors.success, marginVertical: 8 },
 });

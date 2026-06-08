@@ -82,16 +82,49 @@ export const api = {
       body: JSON.stringify({ expo_push_token }),
     }),
 
-  getActiveReturns: () =>
-    request<{ data: Array<{
+  getActiveReturns: (status?: string) =>
+    request<{
+      data: Array<{
+        id: string;
+        merchant_name: string;
+        item_summary: string;
+        status: string;
+        return_deadline_at: string | null;
+        days_remaining: number | null;
+        has_wallet_pass: boolean;
+        expected_refund_amount: number | null;
+      }>;
+    }>(`/returns/active${status ? `?status=${status}` : ''}`),
+
+  getReturn: (id: string) =>
+    request<{
       id: string;
       merchant_name: string;
       item_summary: string;
       status: string;
+      return_deadline_at: string | null;
       days_remaining: number | null;
-    }> }>('/returns/active'),
+      expected_refund_amount: number | null;
+      snooze_count: number;
+      snoozes_remaining: number;
+      has_wallet_pass: boolean;
+      tracking_number: string | null;
+      order: { merchant_name: string; external_order_id: string };
+      refund_status: {
+        status: string;
+        actual_amount: number | null;
+        user_confirmed_at: string | null;
+      } | null;
+    }>(`/returns/${id}`),
 
-  getReturn: (id: string) => request<Record<string, unknown>>(`/returns/${id}`),
+  snoozeReturn: (id: string) =>
+    request(`/returns/${id}/snooze`, { method: 'POST' }),
+
+  confirmRefund: (id: string, amount: number) =>
+    request<{ status: string }>(`/returns/${id}/confirm-refund`, {
+      method: 'POST',
+      body: JSON.stringify({ amount }),
+    }),
 
   createManualReturn: (payload: {
     merchant_name: string;

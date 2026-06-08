@@ -171,8 +171,8 @@ Production requires certs in `wallet-certs/` — see [wallet-certs/README.md](..
 | P5 | Multi-email settings | Done |
 | P6 | Receipt scan + confirm | Done |
 | P7 | Wallet production certs docs + signing path | Done |
-| P8 | Email pipeline + parse review | **In progress (S1)** |
-| P9 | Dashboard + return detail UX | Planned |
+| P8 | Email pipeline + parse review | Done (S1–S2) |
+| P9 | Dashboard + return detail UX | Done (S3) |
 | P10 | Settings & trust | Planned |
 | P11 | Staging deploy | Planned |
 | P12 | Push (dev build) | Planned |

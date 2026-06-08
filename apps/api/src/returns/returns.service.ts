@@ -200,7 +200,61 @@ export class ReturnsService {
     };
   }
 
-  async findById(userId: string, returnId: string) {
+  private formatReturnDetail(
+    ret: {
+      id: string;
+      itemSummary: string;
+      status: string;
+      returnDeadlineAt: Date | null;
+      expectedRefundAmount: unknown;
+      snoozeCount: number;
+      trackingNumber: string | null;
+      walletAppleSerial: string | null;
+      walletGoogleObjectId: string | null;
+      order: { merchantName: string; externalOrderId: string };
+      refundStatus?: {
+        status: string;
+        actualAmount: unknown;
+        userConfirmedAt: Date | null;
+      } | null;
+    },
+  ) {
+    const now = new Date();
+    const daysRemaining = ret.returnDeadlineAt
+      ? Math.ceil((ret.returnDeadlineAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      : null;
+
+    return {
+      id: ret.id,
+      merchant_name: ret.order.merchantName,
+      item_summary: ret.itemSummary,
+      status: ret.status,
+      return_deadline_at: ret.returnDeadlineAt?.toISOString() ?? null,
+      days_remaining: daysRemaining,
+      expected_refund_amount: ret.expectedRefundAmount
+        ? Number(ret.expectedRefundAmount)
+        : null,
+      snooze_count: ret.snoozeCount,
+      snoozes_remaining: Math.max(0, 2 - ret.snoozeCount),
+      has_wallet_pass: !!(ret.walletAppleSerial || ret.walletGoogleObjectId),
+      tracking_number: ret.trackingNumber,
+      order: {
+        merchant_name: ret.order.merchantName,
+        external_order_id: ret.order.externalOrderId,
+      },
+      refund_status: ret.refundStatus
+        ? {
+            status: ret.refundStatus.status,
+            actual_amount: ret.refundStatus.actualAmount
+              ? Number(ret.refundStatus.actualAmount)
+              : null,
+            user_confirmed_at: ret.refundStatus.userConfirmedAt?.toISOString() ?? null,
+          }
+        : null,
+    };
+  }
+
+  async loadReturn(userId: string, returnId: string) {
     const ret = await this.prisma.return.findFirst({
       where: { id: returnId, userId },
       include: {
@@ -213,8 +267,12 @@ export class ReturnsService {
     return ret;
   }
 
+  async findById(userId: string, returnId: string) {
+    return this.formatReturnDetail(await this.loadReturn(userId, returnId));
+  }
+
   async scheduleNotifications(userId: string, returnId: string) {
-    const ret = await this.findById(userId, returnId);
+    const ret = await this.loadReturn(userId, returnId);
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     await this.notificationScheduler.scheduleForReturn(
       { ...ret, order: ret.order },
@@ -223,7 +281,7 @@ export class ReturnsService {
   }
 
   async snooze(userId: string, returnId: string) {
-    const ret = await this.findById(userId, returnId);
+    const ret = await this.loadReturn(userId, returnId);
     if (ret.snoozeCount >= 2) {
       throw new BadRequestException('Maximum snoozes reached');
     }
@@ -242,11 +300,11 @@ export class ReturnsService {
 
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     await this.notificationScheduler.scheduleForReturn(updated, user);
-    return updated;
+    return this.formatReturnDetail(updated);
   }
 
   async confirmRefund(userId: string, returnId: string, amount: number) {
-    const ret = await this.findById(userId, returnId);
+    const ret = await this.loadReturn(userId, returnId);
     await this.prisma.refundStatus.upsert({
       where: { returnId },
       create: {

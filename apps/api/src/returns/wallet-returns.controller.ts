@@ -35,7 +35,7 @@ export class WalletReturnsController {
     @Body() dto: WalletPassDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const ret = await this.returnsService.findById(user.id, id);
+    const ret = await this.returnsService.loadReturn(user.id, id);
     if (!ret.qrPayload) {
       throw new UnprocessableEntityException('Return has no QR payload');
     }
