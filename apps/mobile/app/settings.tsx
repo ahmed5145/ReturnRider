@@ -4,12 +4,11 @@ import {
   FlatList,
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import { Link, Stack, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../lib/api-base';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
@@ -78,10 +77,9 @@ export default function SettingsScreen() {
     );
   }
 
-  return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
+  const header = (
+    <>
       <Text style={styles.title}>Settings</Text>
-
       <Text style={styles.section}>Privacy & data</Text>
       <View style={styles.privacyCard}>
         <Text style={styles.privacyItem}>✓ Read-only Gmail — shopping mail only</Text>
@@ -94,16 +92,34 @@ export default function SettingsScreen() {
           <Text style={styles.legalLink}>Terms of Service →</Text>
         </Pressable>
       </View>
-
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
         Read-only shopping mail. Disconnect anytime — we never sell your data.
       </Text>
+    </>
+  );
 
+  const footer = (
+    <>
+      <Link href="/onboarding/connect" style={styles.addBtn}>
+        <Text style={styles.addBtnText}>+ Add another email</Text>
+      </Link>
+      <Link href="/" style={styles.back}>
+        <Text style={styles.backText}>Back to dashboard</Text>
+      </Link>
+    </>
+  );
+
+  return (
+    <View style={styles.container}>
+      <Stack.Screen options={{ title: 'Settings' }} />
       <FlatList
         data={emails}
         keyExtractor={(e) => e.id}
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
         ListEmptyComponent={<Text style={styles.empty}>No emails connected yet.</Text>}
+        contentContainerStyle={styles.scroll}
         renderItem={({ item }) => (
           <View style={styles.card}>
             <Text style={styles.email}>{item.email_address}</Text>
@@ -136,21 +152,13 @@ export default function SettingsScreen() {
           </View>
         )}
       />
-
-      <Link href="/onboarding/connect" style={styles.addBtn}>
-        <Text style={styles.addBtnText}>+ Add another email</Text>
-      </Link>
-
-      <Link href="/" style={styles.back}>
-        <Text style={styles.backText}>Back to dashboard</Text>
-      </Link>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scroll: { padding: 24, paddingTop: 60, paddingBottom: 40 },
+  scroll: { padding: 24, paddingTop: 16, paddingBottom: 40 },
   privacyCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,

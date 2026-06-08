@@ -145,9 +145,11 @@ export default function HomeScreen() {
         <Link href="/parse-review" asChild>
           <Pressable style={styles.reviewBanner}>
             <Text style={styles.reviewBannerTitle}>
-              {reviewPending} receipt{reviewPending === 1 ? '' : 's'} need a quick look
+              {reviewPending} email{reviewPending === 1 ? '' : 's'} to review
             </Text>
-            <Text style={styles.reviewBannerSub}>Tap to confirm and start tracking</Text>
+            <Text style={styles.reviewBannerSub}>
+              Confirm real return receipts only — dismiss marketing mail
+            </Text>
           </Pressable>
         </Link>
       )}

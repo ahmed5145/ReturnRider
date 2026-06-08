@@ -19,6 +19,13 @@ export class ParseReviewController {
     return this.emailSync.listPendingReviews(user.id);
   }
 
+  @Post('dismiss-all')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Dismiss all pending review items' })
+  async dismissAll(@CurrentUser() user: User) {
+    return this.emailSync.dismissAllReviews(user.id);
+  }
+
   @Post(':id/confirm')
   @HttpCode(200)
   @ApiOperation({ summary: 'Confirm a low-confidence parse and create return' })

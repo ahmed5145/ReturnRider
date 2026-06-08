@@ -151,7 +151,7 @@ export class ReturnsService {
 
     const statuses: ReturnStatus[] =
       statusFilter === 'all_active' || !statusFilter
-        ? ['draft', 'ready_to_ship', 'in_transit', 'delivered_to_merchant', 'awaiting_refund']
+        ? ['ready_to_ship', 'in_transit', 'delivered_to_merchant', 'awaiting_refund']
         : statusFilter === 'ready_to_ship'
           ? ['ready_to_ship']
           : statusFilter === 'in_transit'

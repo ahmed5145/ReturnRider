@@ -3,19 +3,21 @@ import {
   ActivityIndicator,
   Alert,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
 import { api } from '../../lib/api';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
 import { colors } from '../../lib/theme';
 
 export default function ReturnDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string | string[] }>();
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [data, setData] = useState<Awaited<ReturnType<typeof api.getReturn>> | null>(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
@@ -31,6 +33,8 @@ export default function ReturnDetailScreen() {
       if (res.expected_refund_amount != null) {
         setRefundAmount(String(res.expected_refund_amount));
       }
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Could not load return');
     } finally {
       setLoading(false);
     }
@@ -97,10 +101,20 @@ export default function ReturnDetailScreen() {
     }
   };
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <View style={styles.center}>
+        <Stack.Screen options={{ title: 'Return details' }} />
         <ActivityIndicator color={colors.accent} />
+      </View>
+    );
+  }
+
+  if (!data) {
+    return (
+      <View style={styles.center}>
+        <Stack.Screen options={{ title: 'Return details' }} />
+        <Text style={styles.errorText}>Return not found</Text>
       </View>
     );
   }
@@ -110,9 +124,12 @@ export default function ReturnDetailScreen() {
 
   return (
     <View style={styles.container}>
-      <Link href="/" style={styles.back}>
-        <Text style={styles.backText}>← Dashboard</Text>
-      </Link>
+      <Stack.Screen options={{ title: data.merchant_name }} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
 
       <View style={[styles.hero, { borderColor: urgencyColor }]}>
         <Text style={styles.merchant}>{data.merchant_name}</Text>
@@ -182,20 +199,22 @@ export default function ReturnDetailScreen() {
             {acting ? (
               <ActivityIndicator color="#fff" />
             ) : (
-              <Text style={styles.btnText}>I got my refund</Text>
+              <Text style={styles.confirmBtnText}>I got my refund</Text>
             )}
           </Pressable>
         </>
       )}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, paddingTop: 48, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flex: 1 },
+  content: { padding: 24, paddingBottom: 48 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
-  back: { marginBottom: 16 },
-  backText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  errorText: { color: colors.textMuted },
   hero: {
     backgroundColor: colors.bgCard,
     borderRadius: 16,
@@ -260,6 +279,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 16,
   },
+  confirmBtnText: { color: '#fff', fontWeight: '600' },
 });

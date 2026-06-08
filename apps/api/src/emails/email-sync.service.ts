@@ -3,7 +3,11 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { CryptoService } from '../common/crypto.service';
-import { isCommerceEmail } from '../parsers/commerce-classifier';
+import {
+  isCommerceEmail,
+  isReturnRelatedSubject,
+} from '../parsers/commerce-classifier';
+import { addReturnWindow } from '../parsers/merchants/parser-utils';
 import { parseReceipt } from '../parsers/merchants';
 import { ParsedReceipt } from '../parsers/types';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
@@ -126,6 +130,14 @@ export class EmailSyncService {
     };
   }
 
+  async dismissAllReviews(userId: string) {
+    const result = await this.prisma.parseReviewQueue.updateMany({
+      where: { userId, status: 'pending' },
+      data: { status: 'dismissed' },
+    });
+    return { dismissed: result.count };
+  }
+
   async dismissReview(userId: string, reviewId: string) {
     const item = await this.prisma.parseReviewQueue.findFirst({
       where: { id: reviewId, userId, status: 'pending' },
@@ -150,9 +162,16 @@ export class EmailSyncService {
     if (!linked) throw new BadRequestException('Linked inbox not found');
 
     const refreshToken = this.crypto.decrypt(linked.oauthRefreshEnc);
-    const parsed = await this.fetchAndParseMessage(refreshToken, item.messageId);
+    let parsed = await this.fetchAndParseMessage(refreshToken, item.messageId);
     if (!parsed) {
-      throw new BadRequestException('Could not parse this email — try manual add instead');
+      parsed = {
+        merchantName: item.merchantGuess ?? 'Unknown',
+        externalOrderId: `review-${item.messageId.slice(0, 12)}`,
+        itemSummary: item.rawSnippet ?? 'Return receipt',
+        confidence: 1,
+        returnWindowDays: 30,
+        returnDeadlineAt: addReturnWindow(new Date(), 30),
+      };
     }
 
     const merged: ParsedReceipt = {
@@ -170,11 +189,18 @@ export class EmailSyncService {
     if (!merged.externalOrderId) {
       merged.externalOrderId = `review-${item.messageId.slice(0, 12)}`;
     }
+    if (!merged.returnDeadlineAt) {
+      merged.returnDeadlineAt = addReturnWindow(
+        merged.orderDate ?? new Date(),
+        merged.returnWindowDays ?? 30,
+      );
+    }
 
     const returnCreated = await this.persistOrderAndReturn(
       item.linkedEmailId,
       userId,
       merged,
+      { forceReturn: true },
     );
 
     await this.prisma.parseReviewQueue.update({
@@ -219,6 +245,9 @@ export class EmailSyncService {
     }
 
     if (parsed.confidence < REVIEW_THRESHOLD) {
+      if (!isReturnRelatedSubject(subject)) {
+        return { reviewQueued: false, returnCreated: false };
+      }
       const existing = await this.prisma.parseReviewQueue.findUnique({
         where: { linkedEmailId_messageId: { linkedEmailId, messageId } },
       });
@@ -290,6 +319,7 @@ export class EmailSyncService {
     linkedEmailId: string,
     userId: string,
     parsed: ParsedReceipt,
+    options?: { forceReturn?: boolean },
   ): Promise<boolean> {
     const order = await this.prisma.order.upsert({
       where: {
@@ -317,8 +347,10 @@ export class EmailSyncService {
       },
     });
 
-    const isReturnEmail = /return/i.test(parsed.itemSummary ?? '');
-    if (!isReturnEmail && !parsed.returnDeadlineAt) {
+    const isReturnEmail = /return|refund|rma/i.test(parsed.itemSummary ?? '');
+    const shouldCreateReturn =
+      options?.forceReturn || isReturnEmail || !!parsed.returnDeadlineAt;
+    if (!shouldCreateReturn) {
       return false;
     }
 
@@ -327,14 +359,25 @@ export class EmailSyncService {
     });
     if (existing) return false;
 
+    let returnDeadlineAt = parsed.returnDeadlineAt;
+    if (!returnDeadlineAt && (options?.forceReturn || isReturnEmail)) {
+      returnDeadlineAt = addReturnWindow(
+        parsed.orderDate ?? new Date(),
+        parsed.returnWindowDays ?? 30,
+      );
+    }
+
+    const status =
+      parsed.qrPayload || options?.forceReturn ? 'ready_to_ship' : 'draft';
+
     const created = await this.prisma.return.create({
       data: {
         userId,
         orderId: order.id,
-        status: parsed.qrPayload ? 'ready_to_ship' : 'draft',
+        status,
         itemSummary: parsed.itemSummary ?? `Order ${parsed.externalOrderId}`,
         expectedRefundAmount: parsed.totalAmount,
-        returnDeadlineAt: parsed.returnDeadlineAt,
+        returnDeadlineAt,
         returnWindowDays: parsed.returnWindowDays,
         qrPayload: parsed.qrPayload,
         qrFormat: parsed.qrFormat,

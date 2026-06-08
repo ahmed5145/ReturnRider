@@ -201,6 +201,9 @@ export const api = {
   dismissParseReview: (id: string) =>
     request<{ dismissed: boolean }>(`/parse-review/${id}/dismiss`, { method: 'POST' }),
 
+  dismissAllParseReview: () =>
+    request<{ dismissed: number }>('/parse-review/dismiss-all', { method: 'POST' }),
+
   disconnectEmail: (id: string) =>
     request(`/emails/${id}`, { method: 'DELETE' }),
 

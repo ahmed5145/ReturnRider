@@ -1,11 +1,19 @@
-import { isCommerceEmail, extractGenericOrderId } from '../commerce-classifier';
+import {
+  isCommerceEmail,
+  isReturnRelatedSubject,
+  extractGenericOrderId,
+} from '../commerce-classifier';
 import { ParseInput, ParsedReceipt } from '../types';
-import { extractAmount, stripHtml } from './parser-utils';
+import { extractAmount, stripHtml, addReturnWindow } from './parser-utils';
 
 export function parseGeneric(input: ParseInput): ParsedReceipt | null {
   if (!isCommerceEmail(input.from, input.subject)) {
     return null;
   }
+  if (!isReturnRelatedSubject(input.subject)) {
+    return null;
+  }
+
   const text = stripHtml(input.htmlBody) || input.textBody;
   const orderId = extractGenericOrderId(text);
   if (!orderId) return null;
@@ -22,6 +30,7 @@ export function parseGeneric(input: ParseInput): ParsedReceipt | null {
     currency: 'USD',
     itemSummary: input.subject.slice(0, 120),
     returnWindowDays: 30,
-    confidence: 0.75,
+    returnDeadlineAt: addReturnWindow(new Date(), 30),
+    confidence: 0.8,
   };
 }
