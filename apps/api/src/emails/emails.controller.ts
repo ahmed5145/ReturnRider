@@ -26,6 +26,16 @@ export class EmailsController {
     return this.emailsService.listLinked(user.id);
   }
 
+  @Post(':id/sync')
+  @HttpCode(202)
+  @ApiOperation({ summary: 'Trigger a manual inbox re-sync' })
+  async sync(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.emailsService.triggerSync(user.id, id);
+  }
+
   @Delete(':id')
   @ApiOperation({ summary: 'Disconnect linked email' })
   async disconnect(

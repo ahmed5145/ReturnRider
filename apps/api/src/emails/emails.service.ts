@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { EmailProvider } from '@prisma/client';
 import { CryptoService } from '../common/crypto.service';
@@ -85,15 +86,55 @@ export class EmailsService {
       where: { userId, status: { not: 'revoked' } },
       orderBy: { createdAt: 'desc' },
     });
+
+    const data = await Promise.all(
+      emails.map(async (e) => {
+        const [reviewPendingCount, returnsFromInbox] = await Promise.all([
+          this.prisma.parseReviewQueue.count({
+            where: { linkedEmailId: e.id, userId, status: 'pending' },
+          }),
+          this.prisma.order.count({
+            where: { linkedEmailId: e.id, userId },
+          }),
+        ]);
+        return {
+          id: e.id,
+          email_address: e.emailAddress,
+          provider: e.provider,
+          status: e.status,
+          sync_window_days: e.syncWindowDays,
+          last_sync_at: e.lastSyncAt?.toISOString() ?? null,
+          last_error: e.lastError,
+          last_sync_messages_scanned: e.lastSyncMessagesScanned,
+          last_sync_returns_created: e.lastSyncReturnsCreated,
+          last_sync_review_queued: e.lastSyncReviewQueued,
+          review_pending_count: reviewPendingCount,
+          returns_from_inbox_count: returnsFromInbox,
+        };
+      }),
+    );
+
+    return { data };
+  }
+
+  async triggerSync(userId: string, linkedEmailId: string) {
+    const linked = await this.prisma.linkedEmail.findFirst({
+      where: { id: linkedEmailId, userId, status: { not: 'revoked' } },
+    });
+    if (!linked) throw new NotFoundException('Linked email not found');
+    if (linked.status === 'syncing') {
+      throw new BadRequestException('Sync already in progress');
+    }
+
+    const job = await this.emailSync.enqueueSync(linkedEmailId);
+    await this.prisma.linkedEmail.update({
+      where: { id: linkedEmailId },
+      data: { status: 'syncing' },
+    });
+
     return {
-      data: emails.map((e) => ({
-        id: e.id,
-        email_address: e.emailAddress,
-        provider: e.provider,
-        status: e.status,
-        sync_window_days: e.syncWindowDays,
-        last_sync_at: e.lastSyncAt?.toISOString() ?? null,
-      })),
+      status: 'syncing' as const,
+      sync_job_id: job.id ?? String(job.id),
     };
   }
 

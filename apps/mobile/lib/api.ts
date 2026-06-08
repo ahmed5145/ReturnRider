@@ -62,11 +62,14 @@ export const api = {
       onboarding_completed: boolean;
       linked_emails: Array<{
         id: string;
-        emailAddress?: string;
-        email_address?: string;
+        email_address: string;
         status: string;
+        last_sync_at?: string | null;
+        last_error?: string | null;
       }>;
       returns_count: number;
+      review_pending_count: number;
+      inbox_syncing: boolean;
       has_push_token: boolean;
     }>('/users/me'),
 
@@ -116,9 +119,54 @@ export const api = {
     }),
 
   listEmails: () =>
-    request<{ data: Array<{ id: string; email_address: string; provider: string; status: string }> }>(
-      '/emails',
-    ),
+    request<{
+      data: Array<{
+        id: string;
+        email_address: string;
+        provider: string;
+        status: string;
+        sync_window_days?: number;
+        last_sync_at?: string | null;
+        last_error?: string | null;
+        last_sync_messages_scanned?: number;
+        last_sync_returns_created?: number;
+        last_sync_review_queued?: number;
+        review_pending_count?: number;
+        returns_from_inbox_count?: number;
+      }>;
+    }>('/emails'),
+
+  syncEmail: (id: string) =>
+    request<{ status: string; sync_job_id: string }>(`/emails/${id}/sync`, { method: 'POST' }),
+
+  listParseReview: () =>
+    request<{
+      data: Array<{
+        id: string;
+        merchant_guess: string | null;
+        raw_snippet: string | null;
+        confidence: number;
+        created_at: string;
+      }>;
+    }>('/parse-review'),
+
+  confirmParseReview: (
+    id: string,
+    payload?: {
+      merchant_name?: string;
+      external_order_id?: string;
+      item_summary?: string;
+      expected_refund_amount?: number;
+      return_deadline_at?: string;
+    },
+  ) =>
+    request<{ confirmed: boolean; return_created: boolean }>(`/parse-review/${id}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(payload ?? {}),
+    }),
+
+  dismissParseReview: (id: string) =>
+    request<{ dismissed: boolean }>(`/parse-review/${id}/dismiss`, { method: 'POST' }),
 
   disconnectEmail: (id: string) =>
     request(`/emails/${id}`, { method: 'DELETE' }),

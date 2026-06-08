@@ -8,6 +8,7 @@ import { colors } from '../../lib/theme';
 export default function ChecklistScreen() {
   const [linked, setLinked] = useState(0);
   const [returns, setReturns] = useState(0);
+  const [reviewPending, setReviewPending] = useState(0);
   const [pushDone, setPushDone] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(true);
@@ -19,6 +20,7 @@ export default function ChecklistScreen() {
       const me = await api.getMe();
       setLinked(me.linked_emails.length);
       setReturns(me.returns_count);
+      setReviewPending(me.review_pending_count ?? 0);
       setPushDone(me.has_push_token);
     } finally {
       setRefreshing(false);
@@ -43,7 +45,8 @@ export default function ChecklistScreen() {
     router.replace('/');
   };
 
-  const stepsDone = (linked > 0 ? 1 : 0) + (returns > 0 ? 1 : 0) + (pushDone ? 1 : 0);
+  const hasReturnValue = returns > 0 || reviewPending > 0;
+  const stepsDone = (linked > 0 ? 1 : 0) + (hasReturnValue ? 1 : 0) + (pushDone ? 1 : 0);
 
   return (
     <View style={styles.container}>
@@ -77,15 +80,27 @@ export default function ChecklistScreen() {
         </View>
       </View>
 
-      <View style={[styles.item, returns > 0 && styles.itemDone]}>
-        <Text style={styles.check}>{returns > 0 ? '✓' : '2'}</Text>
+      <View style={[styles.item, hasReturnValue && styles.itemDone]}>
+        <Text style={styles.check}>{hasReturnValue ? '✓' : '2'}</Text>
         <View style={styles.flex}>
-          <Text style={styles.itemTitle}>Add your first return</Text>
-          <Text style={styles.itemBody}>No email? Manual entry or scan a paper receipt.</Text>
+          <Text style={styles.itemTitle}>See your first return</Text>
+          <Text style={styles.itemBody}>
+            {reviewPending > 0
+              ? `${reviewPending} receipt${reviewPending === 1 ? '' : 's'} need a quick review.`
+              : returns > 0
+                ? `${returns} return${returns === 1 ? '' : 's'} on your dashboard.`
+                : 'From email sync, review queue, manual entry, or scan.'}
+          </Text>
           <View style={styles.linkRow}>
+            {reviewPending > 0 && (
+              <>
+                <Link href="/parse-review" style={styles.link}>Review receipts</Link>
+                <Text style={styles.sep}> · </Text>
+              </>
+            )}
             <Link href="/add-return" style={styles.link}>Add manually</Link>
             <Text style={styles.sep}> · </Text>
-            <Link href="/scan-receipt" style={styles.link}>Scan receipt</Link>
+            <Link href="/scan-receipt" style={styles.link}>Scan</Link>
           </View>
         </View>
       </View>

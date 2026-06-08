@@ -101,6 +101,9 @@ model LinkedEmail {
   lastSyncCursor     String?       @map("last_sync_cursor")
   lastSyncAt         DateTime?     @map("last_sync_at") @db.Timestamptz
   lastError          String?       @map("last_error")
+  lastSyncMessagesScanned Int      @default(0) @map("last_sync_messages_scanned")
+  lastSyncReturnsCreated  Int      @default(0) @map("last_sync_returns_created")
+  lastSyncReviewQueued    Int      @default(0) @map("last_sync_review_queued")
   syncWindowDays     Int           @default(90) @map("sync_window_days")
   createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz

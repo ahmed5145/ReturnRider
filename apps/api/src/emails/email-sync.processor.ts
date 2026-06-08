@@ -8,9 +8,12 @@ export class EmailSyncProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ linkedEmailId: string }>) {
-    if (job.name === 'sync-linked-email') {
+  async process(job: Job<{ linkedEmailId?: string }>) {
+    if (job.name === 'sync-linked-email' && job.data.linkedEmailId) {
       await this.emailSyncService.syncLinkedEmail(job.data.linkedEmailId);
+    }
+    if (job.name === 'sync-all-inboxes') {
+      await this.emailSyncService.enqueueAllLinkedSyncs();
     }
   }
 }

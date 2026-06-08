@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
+import { colors } from '../lib/theme';
 
 interface LinkedEmail {
   id: string;
@@ -9,11 +10,17 @@ interface LinkedEmail {
   provider: string;
   status: string;
   sync_window_days?: number;
+  last_sync_at?: string | null;
+  last_error?: string | null;
+  review_pending_count?: number;
+  last_sync_messages_scanned?: number;
+  last_sync_returns_created?: number;
 }
 
 export default function SettingsScreen() {
   const [emails, setEmails] = useState<LinkedEmail[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
 
   const load = async () => {
     await ensureAuthToken();
@@ -28,15 +35,35 @@ export default function SettingsScreen() {
     }, []),
   );
 
+  const syncNow = async (id: string) => {
+    setSyncingId(id);
+    try {
+      await api.syncEmail(id);
+      await load();
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const disconnect = async (id: string) => {
     await api.disconnectEmail(id);
     load();
   };
 
+  const formatLastSync = (iso: string | null | undefined) => {
+    if (!iso) return 'Never synced';
+    const d = new Date(iso);
+    const mins = Math.round((Date.now() - d.getTime()) / 60000);
+    if (mins < 2) return 'Just now';
+    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1440) return `${Math.round(mins / 60)}h ago`;
+    return d.toLocaleDateString();
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#e94560" />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -47,7 +74,7 @@ export default function SettingsScreen() {
 
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
-        Connect once per inbox. All accounts sync into one dashboard.
+        Read-only shopping mail. Disconnect anytime — we never sell your data.
       </Text>
 
       <FlatList
@@ -61,9 +88,28 @@ export default function SettingsScreen() {
               {item.provider} · {item.status}
               {item.sync_window_days ? ` · ${item.sync_window_days}d scan` : ''}
             </Text>
-            <Pressable onPress={() => disconnect(item.id)}>
-              <Text style={styles.disconnect}>Disconnect</Text>
-            </Pressable>
+            <Text style={styles.meta}>Last sync: {formatLastSync(item.last_sync_at)}</Text>
+            {item.last_sync_messages_scanned != null && item.status === 'connected' && (
+              <Text style={styles.meta}>
+                Scanned {item.last_sync_messages_scanned} emails · {item.last_sync_returns_created}{' '}
+                returns · {item.review_pending_count ?? 0} to review
+              </Text>
+            )}
+            {item.last_error && (
+              <Text style={styles.errorText}>Sync error: {item.last_error}</Text>
+            )}
+            <View style={styles.row}>
+              <Pressable onPress={() => syncNow(item.id)} disabled={syncingId === item.id}>
+                {syncingId === item.id ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : (
+                  <Text style={styles.syncLink}>Sync now</Text>
+                )}
+              </Pressable>
+              <Pressable onPress={() => disconnect(item.id)}>
+                <Text style={styles.disconnect}>Disconnect</Text>
+              </Pressable>
+            </View>
           </View>
         )}
       />
@@ -80,30 +126,35 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#16213e', padding: 24, paddingTop: 60 },
-  center: { flex: 1, justifyContent: 'center', backgroundColor: '#16213e' },
-  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 24 },
-  section: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  hint: { color: '#888', fontSize: 13, marginBottom: 12, marginTop: 4 },
+  container: { flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: 60 },
+  center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
+  title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 24 },
+  section: { color: colors.text, fontWeight: '600', fontSize: 16 },
+  hint: { color: colors.textMuted, fontSize: 13, marginBottom: 12, marginTop: 4, lineHeight: 18 },
   card: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.bgCard,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  email: { color: '#fff', fontWeight: '600' },
-  meta: { color: '#888', fontSize: 12, marginTop: 4 },
-  disconnect: { color: '#ff6b6b', marginTop: 8, fontSize: 14 },
-  empty: { color: '#666', marginVertical: 16 },
+  email: { color: colors.text, fontWeight: '600' },
+  meta: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  errorText: { color: '#ff6b6b', fontSize: 12, marginTop: 6 },
+  row: { flexDirection: 'row', gap: 20, marginTop: 10, alignItems: 'center' },
+  syncLink: { color: colors.accent, fontWeight: '600', fontSize: 14 },
+  disconnect: { color: '#ff6b6b', fontSize: 14 },
+  empty: { color: colors.textDim, marginVertical: 16 },
   addBtn: {
     borderWidth: 1,
-    borderColor: '#e94560',
+    borderColor: colors.accent,
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
   },
-  addBtnText: { color: '#e94560', fontWeight: '600' },
+  addBtnText: { color: colors.accent, fontWeight: '600' },
   back: { marginTop: 24, alignItems: 'center' },
-  backText: { color: '#aaa' },
+  backText: { color: colors.textDim },
 });

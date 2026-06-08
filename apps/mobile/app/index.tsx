@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
 import { registerForPushNotifications } from '../lib/notifications';
+import { colors } from '../lib/theme';
 
 interface ReturnSummary {
   id: string;
@@ -25,35 +27,52 @@ interface ReturnSummary {
 export default function HomeScreen() {
   const [returns, setReturns] = useState<ReturnSummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewPending, setReviewPending] = useState(0);
+  const [inboxSyncing, setInboxSyncing] = useState(false);
+  const [linkedCount, setLinkedCount] = useState(0);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        await ensureAuthToken();
-        const me = await api.getMe();
-        if (!me.onboarding_completed) {
-          router.replace('/welcome');
-          return;
-        }
-        await registerForPushNotifications();
-        const res = await api.getActiveReturns();
-        setReturns(res.data);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Failed to load');
-      } finally {
-        setLoading(false);
+  const load = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    setError(null);
+    try {
+      await ensureAuthToken();
+      const me = await api.getMe();
+      if (!me.onboarding_completed) {
+        router.replace('/welcome');
+        return;
       }
-    })();
-  }, []);
+      setReviewPending(me.review_pending_count ?? 0);
+      setInboxSyncing(me.inbox_syncing ?? false);
+      setLinkedCount(me.linked_emails?.length ?? 0);
+      await registerForPushNotifications();
+      const res = await api.getActiveReturns();
+      setReturns(res.data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, []),
+  );
 
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#e94560" />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
+
+  const refundTotal = returns.reduce((sum, r) => sum + (r.expected_refund_amount ?? 0), 0);
 
   return (
     <View style={styles.container}>
@@ -63,23 +82,68 @@ export default function HomeScreen() {
           <Text style={styles.settings}>Settings</Text>
         </Link>
       </View>
-      <Text style={styles.subtitle}>Active returns & deadlines</Text>
+
+      {inboxSyncing && (
+        <View style={styles.syncChip}>
+          <Text style={styles.syncChipText}>Scanning shopping mail…</Text>
+        </View>
+      )}
+
+      {reviewPending > 0 && (
+        <Link href="/parse-review" asChild>
+          <Pressable style={styles.reviewBanner}>
+            <Text style={styles.reviewBannerTitle}>
+              {reviewPending} receipt{reviewPending === 1 ? '' : 's'} need a quick look
+            </Text>
+            <Text style={styles.reviewBannerSub}>Tap to confirm and start tracking</Text>
+          </Pressable>
+        </Link>
+      )}
+
+      <Text style={styles.subtitle}>
+        {refundTotal > 0
+          ? `$${refundTotal.toFixed(0)} in refunds to protect`
+          : 'Active returns & deadlines'}
+      </Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
       <FlatList
         data={returns}
         keyExtractor={(item) => item.id}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.accent} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyTitle}>No returns yet</Text>
-            <Text style={styles.empty}>
-              Connect Gmail to auto-import from receipts, or add a return manually if you
-              have a paper receipt.
-            </Text>
-            <Link href="/onboarding/connect" style={styles.emptyLink}>
-              Connect email
-            </Link>
+            {inboxSyncing ? (
+              <>
+                <Text style={styles.emptyTitle}>Scanning your inboxes</Text>
+                <Text style={styles.empty}>
+                  We&apos;re reading the last 90 days of shopping mail. Returns and review items
+                  will appear here shortly.
+                </Text>
+              </>
+            ) : linkedCount > 0 ? (
+              <>
+                <Text style={styles.emptyTitle}>No returns on your dashboard yet</Text>
+                <Text style={styles.empty}>
+                  Sync finished but we didn&apos;t auto-detect return deadlines. Check review
+                  items above, or add a return manually.
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={styles.emptyTitle}>No returns yet</Text>
+                <Text style={styles.empty}>
+                  Connect Gmail to auto-import from receipts, or add a return manually if you
+                  have a paper receipt.
+                </Text>
+                <Link href="/onboarding/connect" style={styles.emptyLink}>
+                  Connect email
+                </Link>
+              </>
+            )}
             <Link href="/add-return" style={styles.emptyLink}>
               Add manually
             </Link>
@@ -97,6 +161,9 @@ export default function HomeScreen() {
                 {item.days_remaining != null
                   ? `${item.days_remaining} days left`
                   : item.status}
+                {item.expected_refund_amount != null
+                  ? ` · $${item.expected_refund_amount.toFixed(2)}`
+                  : ''}
               </Text>
             </Pressable>
           </Link>
@@ -116,36 +183,55 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: '#16213e' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#16213e' },
+  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: colors.bg },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: '#fff' },
-  settings: { color: '#e94560', fontSize: 14 },
-  subtitle: { fontSize: 14, color: '#a0a0b0', marginBottom: 20, marginTop: 4 },
+  title: { fontSize: 28, fontWeight: '700', color: colors.text },
+  settings: { color: colors.accent, fontSize: 14 },
+  syncChip: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 12,
+  },
+  syncChipText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
+  reviewBanner: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  reviewBannerTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
+  reviewBannerSub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
+  subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 16, marginTop: 12 },
   card: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.bgCard,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#e94560',
+    borderLeftColor: colors.accent,
   },
-  merchant: { fontSize: 18, fontWeight: '600', color: '#fff' },
-  item: { fontSize: 14, color: '#c0c0d0', marginTop: 4 },
-  meta: { fontSize: 12, color: '#e94560', marginTop: 8 },
+  merchant: { fontSize: 18, fontWeight: '600', color: colors.text },
+  item: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
+  meta: { fontSize: 12, color: colors.accent, marginTop: 8 },
   emptyBox: { padding: 20, alignItems: 'center' },
-  emptyTitle: { color: '#fff', fontSize: 18, fontWeight: '600', marginBottom: 8 },
-  empty: { color: '#888', textAlign: 'center', lineHeight: 22, marginBottom: 16 },
-  emptyLink: { color: '#e94560', marginVertical: 6, fontSize: 15 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  empty: { color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 16 },
+  emptyLink: { color: colors.accent, marginVertical: 6, fontSize: 15 },
   error: { color: '#ff6b6b', marginBottom: 12 },
   actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
   actionBtn: {
     flex: 1,
-    backgroundColor: '#e94560',
+    backgroundColor: colors.accent,
     padding: 14,
     borderRadius: 12,
     alignItems: 'center',
   },
-  actionSecondary: { backgroundColor: '#1a1a2e', borderWidth: 1, borderColor: '#e94560' },
+  actionSecondary: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.accent },
   actionText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

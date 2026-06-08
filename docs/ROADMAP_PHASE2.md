@@ -53,7 +53,7 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 | **S4** | P11 + P9b | Staging deploy + onboarding polish | Public API URL; funnel events |
 | **S5+** | P12–P14 | Push (Android), wallet, integrations | Deferred until core loop proven |
 
-**Current sprint:** S1 (in progress)
+**Current sprint:** S3 (dashboard detail + settings polish)
 
 ---
 
@@ -71,11 +71,11 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 
 ### Mobile (S2)
 
-- [ ] Dashboard sync status chip + pull-to-refresh
-- [ ] Banner: “N receipts need a quick look” → review list
-- [ ] Parse review list + confirm form
-- [ ] Settings: Sync now + last sync / error
-- [ ] Empty states: syncing / nothing found / items in review
+- [x] Dashboard sync status chip + pull-to-refresh
+- [x] Banner: “N receipts need a quick look” → review list
+- [x] Parse review list + confirm/dismiss
+- [x] Settings: Sync now + last sync / error
+- [x] Empty states: syncing / nothing found / items in review
 
 ### UX copy (locked)
 
@@ -177,7 +177,7 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 | Date | Sprint | Change |
 |------|--------|--------|
 | 2026-06-08 | — | Phase 2 roadmap locked |
-| 2026-06-08 | S1 | Started: sync stats, re-sync, parse-review API, incremental sync |
+| 2026-06-08 | S1 | Sync stats, re-sync, parse-review API, incremental sync, mobile S2 screens |
 
 ---
 
