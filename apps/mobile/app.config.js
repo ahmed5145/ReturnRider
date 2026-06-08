@@ -7,6 +7,13 @@ const EAS_PROJECT_ID =
 module.exports = () => ({
   ...base,
   owner: 'ahmedm1',
+  ios: {
+    ...base.ios,
+    infoPlist: {
+      ...base.ios?.infoPlist,
+      ITSAppUsesNonExemptEncryption: false,
+    },
+  },
   extra: {
     ...base.extra,
     eas: {
