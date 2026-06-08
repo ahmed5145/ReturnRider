@@ -1,4 +1,4 @@
-import { ParseInput, ParsedReceipt } from '../types';
+import { ParseInput, ParsedReceipt } from './types';
 import { extractGenericOrderId, isCommerceEmail } from './commerce-classifier';
 import { extractAmount } from './merchants/parser-utils';
 import { parseReceipt } from './merchants/index';

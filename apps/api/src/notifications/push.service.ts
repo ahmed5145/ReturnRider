@@ -1,33 +1,49 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Expo, ExpoPushMessage } from 'expo-server-sdk';
 import { PrismaService } from '../prisma/prisma.service';
+
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
+
+function isExpoPushToken(token: string): boolean {
+  return /^Expo(nent)?PushToken\[/i.test(token);
+}
 
 @Injectable()
 export class PushService {
   private readonly logger = new Logger(PushService.name);
-  private readonly expo = new Expo();
 
   constructor(private readonly prisma: PrismaService) {}
 
   async sendToUser(userId: string, title: string, body: string, data?: Record<string, string>) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user?.expoPushToken || !Expo.isExpoPushToken(user.expoPushToken)) {
+    if (!user?.expoPushToken || !isExpoPushToken(user.expoPushToken)) {
       this.logger.warn(`No valid Expo push token for user ${userId}`);
       return { sent: false, reason: 'no_token' };
     }
 
-    const message: ExpoPushMessage = {
-      to: user.expoPushToken,
-      sound: 'default',
-      title,
-      body,
-      data,
-    };
-
     try {
-      const tickets = await this.expo.sendPushNotificationsAsync([message]);
+      const response = await fetch(EXPO_PUSH_URL, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: user.expoPushToken,
+          sound: 'default',
+          title,
+          body,
+          data,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        this.logger.error(`Push failed for ${userId}: ${JSON.stringify(result)}`);
+        return { sent: false, reason: 'send_failed', result };
+      }
+
       this.logger.log(`Push sent to ${userId}: ${title}`);
-      return { sent: true, tickets };
+      return { sent: true, result };
     } catch (err) {
       this.logger.error(`Push failed for ${userId}: ${err}`);
       return { sent: false, reason: 'send_failed' };
