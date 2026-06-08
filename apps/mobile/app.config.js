@@ -1,9 +1,16 @@
 /** @type {import('expo/config').ExpoConfig} */
-module.exports = ({ config }) => ({
-  ...require('./app.json').expo,
+const base = require('./app.json').expo;
+
+const EAS_PROJECT_ID =
+  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? 'aa737750-09c8-4cf8-969c-121feefc9597';
+
+module.exports = () => ({
+  ...base,
+  owner: 'ahmedm1',
   extra: {
+    ...base.extra,
     eas: {
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+      projectId: EAS_PROJECT_ID,
     },
   },
 });

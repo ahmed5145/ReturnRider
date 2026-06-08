@@ -45,16 +45,21 @@ Also enable Gmail API once: **APIs & Services** → **Library** → search **Gma
 
 ### Authorized redirect URIs
 
-Add the **exact** redirect URI shown on the app’s **Connect Gmail** screen (green text, selectable).
+**Important:** Web application clients only accept `http://` or `https://` URIs. Google will reject `returnrider://` with “must contain a domain”.
 
-Typical values:
+Add the URI shown on the app’s **Connect Gmail** screen. For Expo Go on a phone, that is usually:
 
-| How you run the app | Redirect URI to add |
-|---------------------|---------------------|
-| Expo dev client / production build | `returnrider://` |
-| Some Expo Go setups | `https://auth.expo.io/@YOUR_EXPO_USERNAME/returnrider` |
+```
+https://auth.expo.io/@ahmedm1/returnrider
+```
 
-**Always use the URI shown in the app** — copy it from Connect Gmail, paste into Google Console, click **Create**.
+If you test in a browser, also add:
+
+```
+http://localhost:8081
+```
+
+Copy the green URI from Connect Gmail → paste into Google Console → **Save**.
 
 4. After create, copy:
    - **Client ID** → mobile + API
@@ -135,7 +140,20 @@ Until then, push registration is skipped safely — Gmail and returns still work
 
 ---
 
-## Part E — Test the flow
+## Part E — Expo Go redirect (why Allow then fails)
+
+Expo Go cannot use `returnrider://` with a Google **Web** client. The app uses:
+
+1. **Google redirect** (add to Google Console): `https://auth.expo.io/@ahmedm1/returnrider`
+2. **App return** (shown on Connect Gmail, do **not** add to Google): `exp://…` from Expo
+
+The app opens Google's login through Expo's auth proxy (`…/start?authUrl=…&returnUrl=…`). If you tap Allow and the app says "cancelled or failed", restart Metro with `-c` after pulling the latest code — older builds opened Google directly and could not return to Expo Go on iOS.
+
+**Reliable production path:** a development build (`expo-dev-client` + `eas build`). Expo Go + `auth.expo.io` is best-effort only.
+
+---
+
+## Part F — Test the flow
 
 1. Start API: `cd apps\api` → `npm run dev`
 2. Start mobile: `cd apps\mobile` → `npx expo start -c`

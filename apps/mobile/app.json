@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "ReturnRider",
+    "owner": "ahmedm1",
     "slug": "returnrider",
     "version": "1.0.0",
     "orientation": "portrait",

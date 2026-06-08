@@ -1,10 +1,15 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
 import { connectGmail } from '../../lib/google-auth';
+import {
+  getAppReturnUri,
+  getGoogleRedirectUri,
+  isExpoGo,
+} from '../../lib/google-redirect';
 
-const REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: 'returnrider' });
+const REDIRECT_URI = getGoogleRedirectUri();
+const APP_RETURN_URI = isExpoGo() ? getAppReturnUri() : null;
 
 export default function ConnectEmailScreen() {
   const [loading, setLoading] = useState(false);
@@ -43,14 +48,23 @@ export default function ConnectEmailScreen() {
       <View style={styles.setupBox}>
         <Text style={styles.setupTitle}>Google Console setup</Text>
         <Text style={styles.setupBody}>
-          In your OAuth client → Authorized redirect URIs, add this exact value:
+          Google Console → Web client → Authorized redirect URIs → add:
         </Text>
         <Text selectable style={styles.setupUri}>
           {REDIRECT_URI}
         </Text>
+        {APP_RETURN_URI && (
+          <>
+            <Text style={[styles.setupBody, { marginTop: 10 }]}>
+              Expo Go also uses this return URL (do not add to Google):
+            </Text>
+            <Text selectable style={styles.setupUriSecondary}>
+              {APP_RETURN_URI}
+            </Text>
+          </>
+        )}
         <Text style={styles.setupHint}>
-          Leave Authorized JavaScript origins empty. Save, wait a few minutes, then tap
-          Connect below.
+          Leave JavaScript origins empty. Save, wait a few minutes, then tap Connect below.
         </Text>
       </View>
 
@@ -90,6 +104,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 8,
     lineHeight: 20,
+  },
+  setupUriSecondary: {
+    color: '#9aa8bc',
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 18,
   },
   setupHint: { color: '#6b7a8f', fontSize: 11, marginTop: 8, lineHeight: 16 },
   error: { color: '#ff6b6b', marginTop: 12 },
