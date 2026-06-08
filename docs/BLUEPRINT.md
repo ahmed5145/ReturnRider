@@ -158,6 +158,8 @@ Production requires certs in `wallet-certs/` — see [wallet-certs/README.md](..
 
 ## Section J — Phased roadmap
 
+**Phase 2 (locked):** see [ROADMAP_PHASE2.md](./ROADMAP_PHASE2.md) for P8–P14 sprints, KPIs, and implementation log.
+
 | Phase | Deliverable | Status |
 |-------|-------------|--------|
 | P0 | This blueprint | Done |
@@ -169,6 +171,13 @@ Production requires certs in `wallet-certs/` — see [wallet-certs/README.md](..
 | P5 | Multi-email settings | Done |
 | P6 | Receipt scan + confirm | Done |
 | P7 | Wallet production certs docs + signing path | Done |
+| P8 | Email pipeline + parse review | **In progress (S1)** |
+| P9 | Dashboard + return detail UX | Planned |
+| P10 | Settings & trust | Planned |
+| P11 | Staging deploy | Planned |
+| P12 | Push (dev build) | Planned |
+| P13 | Wallet production | Deferred |
+| P14 | Plaid / EasyPost | Deferred |
 
 ---
 
