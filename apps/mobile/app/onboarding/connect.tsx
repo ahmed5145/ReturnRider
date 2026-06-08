@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
 import { connectGmail } from '../../lib/google-auth';
+
+const REDIRECT_URI = AuthSession.makeRedirectUri({ scheme: 'returnrider' });
 
 export default function ConnectEmailScreen() {
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,20 @@ export default function ConnectEmailScreen() {
         Default is 90 days. Enabling 180 imports more history but reads more email.
       </Text>
 
+      <View style={styles.setupBox}>
+        <Text style={styles.setupTitle}>Google Console setup</Text>
+        <Text style={styles.setupBody}>
+          In your OAuth client → Authorized redirect URIs, add this exact value:
+        </Text>
+        <Text selectable style={styles.setupUri}>
+          {REDIRECT_URI}
+        </Text>
+        <Text style={styles.setupHint}>
+          Leave Authorized JavaScript origins empty. Save, wait a few minutes, then tap
+          Connect below.
+        </Text>
+      </View>
+
       {error && <Text style={styles.error}>{error}</Text>}
 
       <Pressable style={styles.btn} onPress={onConnect} disabled={loading}>
@@ -57,6 +74,24 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
   rowLabel: { color: '#fff', flex: 1, paddingRight: 12 },
   hint: { color: '#888', fontSize: 12, marginTop: 8 },
+  setupBox: {
+    marginTop: 20,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#1a1a2e',
+    borderWidth: 1,
+    borderColor: '#2d3a4f',
+  },
+  setupTitle: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  setupBody: { color: '#9aa8bc', fontSize: 12, marginTop: 8, lineHeight: 18 },
+  setupUri: {
+    color: '#3dd68c',
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  setupHint: { color: '#6b7a8f', fontSize: 11, marginTop: 8, lineHeight: 16 },
   error: { color: '#ff6b6b', marginTop: 12 },
   btn: {
     backgroundColor: '#4285F4',

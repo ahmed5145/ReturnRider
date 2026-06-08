@@ -1,93 +1,156 @@
 # Google OAuth setup (Gmail connect)
 
-ReturnRider uses **OAuth 2.0 with PKCE** on mobile and exchanges the auth code on the API. You need one Google Cloud project and credentials in two places.
+ReturnRider uses **OAuth 2.0 with PKCE** on the phone. The API exchanges the auth code for a refresh token. You need one Google Cloud project.
 
-## 1. Create a Google Cloud project
+---
 
-1. Open [Google Cloud Console](https://console.cloud.google.com/).
-2. **Select project** → **New project** → name it e.g. `ReturnRider`.
-3. Enable **Gmail API**: **APIs & Services** → **Library** → search **Gmail API** → **Enable**.
+## Part A — OAuth consent screen (scopes + test users)
 
-## 2. OAuth consent screen
+This is a **separate page** from creating the OAuth client.
 
-1. **APIs & Services** → **OAuth consent screen**.
-2. User type: **External** (for real users) or **Internal** (Google Workspace only).
-3. App name: `ReturnRider`, support email, developer contact.
-4. Scopes: add `https://www.googleapis.com/auth/gmail.readonly` (and `openid`, `email` if prompted).
-5. Test users: while in **Testing**, add your Gmail address as a test user.
+1. Open [Google Cloud Console](https://console.cloud.google.com/) and select your project.
+2. Left menu: **APIs & Services** → **OAuth consent screen**.
+3. If asked, click **Get started** or **CONFIGURE CONSENT SCREEN**.
+4. **User type** → choose **External** → **Create**.
+5. **App information** (page 1):
+   - App name: `ReturnRider`
+   - User support email: your email
+   - Developer contact: your email
+   - Click **Save and continue**
+6. **Scopes** (page 2):
+   - Click **Add or remove scopes**
+   - Search: `gmail.readonly`
+   - Check: `https://www.googleapis.com/auth/gmail.readonly`
+   - Also fine to include `openid` and `email` if listed
+   - Click **Update** → **Save and continue**
+7. **Test users** (page 3) — required while app is in **Testing**:
+   - Click **Add users**
+   - Enter the Gmail address you will sign in with on the phone
+   - **Save and continue**
+8. **Summary** → **Back to dashboard**
 
-> Production with sensitive scopes requires [Google verification](https://support.google.com/cloud/answer/9110914). Testing mode works for up to 100 test users without verification.
+Also enable Gmail API once: **APIs & Services** → **Library** → search **Gmail API** → **Enable**.
 
-## 3. Create OAuth client IDs
+---
 
-You need credentials for **mobile (PKCE)** and **server token exchange**.
-
-### Option A — Recommended for Expo dev (Web client + custom scheme)
+## Part B — Create OAuth client (the form you are on)
 
 1. **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
-2. Application type: **Web application**.
-3. Name: `ReturnRider Mobile`.
-4. **Authorized redirect URIs** — add the URI Expo prints when you connect Gmail (or build it):
-   - Run the app, tap Connect Gmail once; check Metro logs for `redirectUri`, or use:
-   - `returnrider://` (from `scheme` in `app.json`)
-   - Expo Go often uses: `https://auth.expo.io/@YOUR_EXPO_USERNAME/returnrider`
-5. Copy the **Client ID** → this is `EXPO_PUBLIC_GOOGLE_CLIENT_ID`.
+2. Application type: **Web application**
+3. Name: `ReturnRider OAuth Client` (any name is fine)
 
-For the **same** Web client (or a second Web client):
+### Authorized JavaScript origins
 
-6. Create another **Web application** client named `ReturnRider API` (optional but cleaner).
-7. Copy **Client ID** and **Client secret** → API env vars below.
+**Leave this empty** for ReturnRider. This field is for browser JavaScript apps. The mobile app does not use it.
 
-### Option B — Native clients (production builds)
+### Authorized redirect URIs
 
-- **iOS**: OAuth client type **iOS**, bundle ID `com.returnrider.app`.
-- **Android**: OAuth client type **Android**, package `com.returnrider.app`, SHA-1 from your keystore.
+Add the **exact** redirect URI shown on the app’s **Connect Gmail** screen (green text, selectable).
 
-Use the **iOS or Android client ID** as `EXPO_PUBLIC_GOOGLE_CLIENT_ID` in store builds. Web client + custom scheme is simpler for local Expo Go testing.
+Typical values:
 
-## 4. Environment variables
+| How you run the app | Redirect URI to add |
+|---------------------|---------------------|
+| Expo dev client / production build | `returnrider://` |
+| Some Expo Go setups | `https://auth.expo.io/@YOUR_EXPO_USERNAME/returnrider` |
 
-### Mobile (`apps/mobile/.env`)
+**Always use the URI shown in the app** — copy it from Connect Gmail, paste into Google Console, click **Create**.
 
-```env
-EXPO_PUBLIC_API_URL=http://YOUR_LAN_IP:3000/api/v1
-EXPO_PUBLIC_GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
-```
+4. After create, copy:
+   - **Client ID** → mobile + API
+   - **Client secret** → API only (click download or show secret)
 
-`EXPO_PUBLIC_GOOGLE_CLIENT_ID` is the **OAuth 2.0 Client ID** string from step 3 — not the project number, not the API key.
+---
 
-Restart Metro after changing `.env`: `npx expo start -c`.
+## Part C — Environment variables (fill in after OAuth client exists)
 
-### API (`apps/api/.env`)
+### Mobile — `apps/mobile/.env`
+
+Create this file if it does not exist:
 
 ```env
-GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxx
+# Your PC LAN IP — run ipconfig, use IPv4 (NOT localhost on a real phone)
+EXPO_PUBLIC_API_URL=http://10.22.4.10:3000/api/v1
+
+# From Google Console → Credentials → your Web client → Client ID
+EXPO_PUBLIC_GOOGLE_CLIENT_ID=123456789-abcdef.apps.googleusercontent.com
+
+# Optional for push — skip until EAS is set up (see below)
+# EXPO_PUBLIC_EAS_PROJECT_ID=
 ```
 
-The API uses these to exchange the authorization code for refresh tokens (`apps/api/src/emails/gmail.service.ts`). Client ID should match the mobile client used for the auth request.
+Restart Metro after saving:
 
-## 5. Verify the flow
+```cmd
+cd apps\mobile
+npx expo start -c
+```
 
-1. API running on `0.0.0.0:3000`.
-2. Mobile `.env` uses your PC LAN IP (not `localhost` on a physical phone).
-3. Open app → onboarding → **Connect Gmail**.
-4. Sign in with a **test user** account (if consent screen is in Testing).
-5. API should store encrypted refresh token and schedule email sync.
+### API — `apps/api/.env`
 
-## Troubleshooting
+You should already have database/redis keys. Add or update:
 
-| Error | Fix |
-|-------|-----|
-| `redirect_uri_mismatch` | Add exact redirect URI from logs to Google Console |
-| `access_denied` | Add your Gmail as OAuth test user |
-| `Set EXPO_PUBLIC_GOOGLE_CLIENT_ID` | Create `.env` in `apps/mobile` and restart Expo |
-| Token exchange fails on API | Match `GOOGLE_CLIENT_ID` / `SECRET` to the client that issued the code |
+```env
+GOOGLE_CLIENT_ID=123456789-abcdef.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-your-secret-here
+```
 
-## Where each value lives
+Use the **same Client ID** as mobile. The secret must match that client.
 
-| Variable | Source |
-|----------|--------|
-| `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | Google Console → Credentials → OAuth 2.0 Client ID |
-| `GOOGLE_CLIENT_ID` | Same or API-specific Web client ID |
-| `GOOGLE_CLIENT_SECRET` | Same client's secret (API only — never put in mobile) |
+`GOOGLE_REDIRECT_URI` in the API is optional — the mobile app sends the real redirect URI on each connect. You can leave the default or set:
+
+```env
+GOOGLE_REDIRECT_URI=returnrider://
+```
+
+### What you can skip for now
+
+- Plaid (`PLAID_*`) — refund bank matching, delayed
+- EasyPost (`EASYPOST_*`) — package tracking, delayed
+- Wallet certs (`APPLE_*`, `GOOGLE_WALLET_*`) — production only
+- Firebase (`FIREBASE_*`) — Expo push uses Expo’s service when EAS is configured
+
+---
+
+## Part D — Push notifications / EAS (optional, can delay)
+
+`npx eas login` fails because the package is named **eas-cli**, not `eas`.
+
+In **cmd**:
+
+```cmd
+cd C:\Users\hussah01\ReturnRider\apps\mobile
+npm install
+npx eas-cli login
+npx eas-cli init
+```
+
+Copy the project UUID into `apps/mobile/.env`:
+
+```env
+EXPO_PUBLIC_EAS_PROJECT_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+Until then, push registration is skipped safely — Gmail and returns still work.
+
+---
+
+## Part E — Test the flow
+
+1. Start API: `cd apps\api` → `npm run dev`
+2. Start mobile: `cd apps\mobile` → `npx expo start -c`
+3. Phone on same Wi‑Fi; `EXPO_PUBLIC_API_URL` uses PC LAN IP
+4. App → Connect Gmail → sign in with a **test user** Gmail
+5. If `redirect_uri_mismatch`: copy URI from Connect screen again into Google Console
+
+---
+
+## Quick reference
+
+| Variable | Where to get it |
+|----------|-----------------|
+| `EXPO_PUBLIC_GOOGLE_CLIENT_ID` | Credentials → OAuth client → Client ID |
+| `GOOGLE_CLIENT_ID` | Same Client ID |
+| `GOOGLE_CLIENT_SECRET` | Same client → Client secret |
+| `EXPO_PUBLIC_API_URL` | `http://YOUR_LAN_IP:3000/api/v1` from `ipconfig` |
+| `EXPO_PUBLIC_EAS_PROJECT_ID` | `npx eas-cli init` (optional) |
