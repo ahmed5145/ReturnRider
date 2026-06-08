@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Link, router } from 'expo-router';
+import { Link, router, useFocusEffect } from 'expo-router';
 import { api, ensureAuthToken } from '../../lib/api';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/theme';
@@ -10,16 +10,26 @@ export default function ChecklistScreen() {
   const [returns, setReturns] = useState(0);
   const [pushDone, setPushDone] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(true);
 
-  useEffect(() => {
-    (async () => {
+  const refreshProgress = useCallback(async () => {
+    setRefreshing(true);
+    try {
       await ensureAuthToken();
       const me = await api.getMe();
       setLinked(me.linked_emails.length);
       setReturns(me.returns_count);
       setPushDone(me.has_push_token);
-    })();
+    } finally {
+      setRefreshing(false);
+    }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProgress();
+    }, [refreshProgress]),
+  );
 
   const enablePush = async () => {
     setPushLoading(true);
@@ -44,7 +54,9 @@ export default function ChecklistScreen() {
       </Text>
 
       <View style={styles.progressCard}>
-        <Text style={styles.progressText}>{stepsDone} of 3 complete</Text>
+        <Text style={styles.progressText}>
+          {refreshing ? 'Updating…' : `${stepsDone} of 3 complete`}
+        </Text>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${(stepsDone / 3) * 100}%` }]} />
         </View>
@@ -54,8 +66,14 @@ export default function ChecklistScreen() {
         <Text style={styles.check}>{linked > 0 ? '✓' : '1'}</Text>
         <View style={styles.flex}>
           <Text style={styles.itemTitle}>Connect Gmail</Text>
-          <Text style={styles.itemBody}>Auto-import orders & return QR codes (read-only).</Text>
-          <Link href="/onboarding/connect" style={styles.link}>Connect Gmail →</Link>
+          <Text style={styles.itemBody}>
+            {linked > 0
+              ? `${linked} inbox${linked === 1 ? '' : 'es'} connected — syncing receipts in the background.`
+              : 'Auto-import orders & return QR codes (read-only).'}
+          </Text>
+          <Link href="/onboarding/connect" style={styles.link}>
+            {linked > 0 ? 'Add another inbox →' : 'Connect Gmail →'}
+          </Link>
         </View>
       </View>
 

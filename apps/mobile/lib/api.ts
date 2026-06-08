@@ -60,8 +60,14 @@ export const api = {
   getMe: () =>
     request<{
       onboarding_completed: boolean;
-      linked_emails: Array<{ id: string; email_address: string; status: string }>;
+      linked_emails: Array<{
+        id: string;
+        emailAddress?: string;
+        email_address?: string;
+        status: string;
+      }>;
       returns_count: number;
+      has_push_token: boolean;
     }>('/users/me'),
 
   completeOnboarding: () =>

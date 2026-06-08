@@ -20,8 +20,11 @@ export default function ConnectEmailScreen() {
     setLoading(true);
     setError(null);
     try {
-      await connectGmail(sync180 ? 180 : 90);
-      router.back();
+      const result = await connectGmail(sync180 ? 180 : 90);
+      router.replace({
+        pathname: '/onboarding/checklist',
+        params: { connected: result.email_address },
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Connection failed');
     } finally {
