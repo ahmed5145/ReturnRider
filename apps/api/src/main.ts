@@ -5,7 +5,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
-  app.enableCors({ origin: true, credentials: true });
+  const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean);
+  app.enableCors({
+    origin: corsOrigins?.length ? corsOrigins : true,
+    credentials: true,
+  });
   app.setGlobalPrefix('api/v1', {
     exclude: [
       { path: 'health', method: RequestMethod.GET },

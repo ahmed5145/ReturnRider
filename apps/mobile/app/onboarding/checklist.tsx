@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Link, router, useFocusEffect } from 'expo-router';
+import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { trackEvent } from '../../lib/analytics';
 import { api, ensureAuthToken } from '../../lib/api';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/theme';
 
 export default function ChecklistScreen() {
+  const { connected } = useLocalSearchParams<{ connected?: string }>();
   const [linked, setLinked] = useState(0);
   const [returns, setReturns] = useState(0);
   const [reviewPending, setReviewPending] = useState(0);
@@ -42,6 +44,7 @@ export default function ChecklistScreen() {
 
   const finish = async () => {
     await api.completeOnboarding();
+    trackEvent('onboarding_completed');
     router.replace('/');
   };
 
@@ -55,6 +58,15 @@ export default function ChecklistScreen() {
       <Text style={styles.sub}>
         One-time setup. Connect once, then returns appear automatically.
       </Text>
+
+      {connected && (
+        <View style={styles.successBanner}>
+          <Text style={styles.successTitle}>Gmail connected</Text>
+          <Text style={styles.successBody}>
+            Scanning last 90 days of shopping mail for {connected}…
+          </Text>
+        </View>
+      )}
 
       <View style={styles.progressCard}>
         <Text style={styles.progressText}>
@@ -135,6 +147,16 @@ const styles = StyleSheet.create({
   eyebrow: { color: colors.accent, fontWeight: '600', fontSize: 13, textTransform: 'uppercase' },
   title: { fontSize: 26, fontWeight: '700', color: colors.text, marginTop: 6 },
   sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
+  successBanner: {
+    backgroundColor: 'rgba(61, 214, 140, 0.1)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  successTitle: { color: colors.success, fontWeight: '700', fontSize: 15 },
+  successBody: { color: colors.textMuted, fontSize: 13, marginTop: 4, lineHeight: 18 },
   progressCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,

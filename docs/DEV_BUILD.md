@@ -50,12 +50,32 @@ Scan the QR code with your **dev build** app (not Expo Go).
 
 ## Expo Go workflow (current — recommended without Apple)
 
+After `expo-dev-client` is installed, plain `expo start` defaults to **development build** mode. That QR code only works if you installed a custom ReturnRider dev build — **not** the iPhone Camera app or Expo Go.
+
+**Use Expo Go** (no Apple Developer account):
+
 ```cmd
 cd apps\mobile
-npx expo start -c
+npm start
 ```
 
-Open in **Expo Go** on your iPhone. Gmail connect, settings, and returns all work.
+Or explicitly:
+
+```cmd
+npx expo start --go -c
+```
+
+Metro should say `Using Expo Go` (not `Using development build`). Open the **Expo Go** app → scan the QR from inside Expo Go, or use the Camera app if it offers “Open in Expo Go”.
+
+**Quick fix if you already started Metro:** press **`s`** in the terminal to switch to Expo Go.
+
+**When you have a dev build installed** (Android APK or iOS after Apple enrollment):
+
+```cmd
+npm run start:dev-client
+```
+
+Gmail connect, settings, and returns all work in Expo Go. Push notifications need a dev build.
 
 ---
 

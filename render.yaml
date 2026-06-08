@@ -1,0 +1,29 @@
+# ReturnRider API — Render.com staging/production
+# Docs: docs/STAGING_DEPLOY.md
+services:
+  - type: web
+    name: returnrider-api
+    runtime: node
+    region: ohio
+    plan: free
+    rootDir: apps/api
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ENCRYPTION_MASTER_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: PORT
+        value: 10000

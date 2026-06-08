@@ -1,6 +1,16 @@
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
+import { legalUrl } from '../lib/api-base';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -69,8 +79,21 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container} contentContainerStyle={styles.scroll}>
       <Text style={styles.title}>Settings</Text>
+
+      <Text style={styles.section}>Privacy & data</Text>
+      <View style={styles.privacyCard}>
+        <Text style={styles.privacyItem}>✓ Read-only Gmail — shopping mail only</Text>
+        <Text style={styles.privacyItem}>✓ We never sell your email data</Text>
+        <Text style={styles.privacyItem}>✓ Disconnect any inbox anytime</Text>
+        <Pressable onPress={() => Linking.openURL(legalUrl('privacy'))}>
+          <Text style={styles.legalLink}>Privacy Policy →</Text>
+        </Pressable>
+        <Pressable onPress={() => Linking.openURL(legalUrl('terms'))}>
+          <Text style={styles.legalLink}>Terms of Service →</Text>
+        </Pressable>
+      </View>
 
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
@@ -121,12 +144,24 @@ export default function SettingsScreen() {
       <Link href="/" style={styles.back}>
         <Text style={styles.backText}>Back to dashboard</Text>
       </Link>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: 60 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { padding: 24, paddingTop: 60, paddingBottom: 40 },
+  privacyCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  privacyItem: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
+  legalLink: { color: colors.accent, fontWeight: '600', fontSize: 14, marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 24 },
   section: { color: colors.text, fontWeight: '600', fontSize: 16 },

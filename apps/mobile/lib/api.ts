@@ -212,7 +212,11 @@ export const api = {
     email_hint?: string;
     sync_days?: 90 | 180;
   }) =>
-    request('/emails/connect', {
+    request<{
+      linked_email_id: string;
+      email_address: string;
+      status: string;
+    }>('/emails/connect', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

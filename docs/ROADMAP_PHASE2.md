@@ -1,9 +1,9 @@
 # ReturnRider — Phase 2 Roadmap (LOCKED)
 
 > **Status:** LOCKED — 2026-06-08  
-> **Authority:** This document supersedes ad-hoc Phase 2 planning. Do not change scope without updating this file and `docs/BLUEPRINT.md` Section J.  
-> **Prerequisite:** P0–P7 complete (onboarding, Gmail OAuth, manual add, scan, multi-email, push wiring).  
-> **North star:** User connects Gmail once → sees real returns with deadlines → gets reminded → ships with Wallet QR → confirms refund.
+> **Phase 2 core:** **COMPLETE** (S1–S4). Smoke test before production.  
+> **Deferred:** S5+ (push dev build, wallet certs, Plaid/EasyPost).  
+> **Authority:** This document supersedes ad-hoc Phase 2 planning. Do not change scope without updating this file and `docs/BLUEPRINT.md` Section J.
 
 ---
 
@@ -20,156 +20,71 @@
 
 ---
 
-## Guiding principles
-
-| Lens | Rule |
-|------|------|
-| User value | Missed parse > wrong deadline; never block users without email |
-| Conversion | First session must show *something* valuable (return or “N need review”) |
-| Retention | Push + deadline urgency + “money saved” feedback |
-| Technical | Thin vertical slices; API truth in `openapi.yaml` + `BLUEPRINT.md` |
-| Marketing | Privacy-first, shopping-mail-only, “boarding pass for returns” |
-
----
-
-## Architecture (target)
-
-```
-Gmail → BullMQ sync → Parsers → (≥0.85) Dashboard
-                            → (<0.85) Parse Review Queue → User confirm → Dashboard
-Manual / Scan ─────────────────────────────────────────────→ Dashboard
-Dashboard → Return Detail → Wallet / Snooze / Refund confirm
-```
-
----
-
 ## Sprint plan
 
-| Sprint | ID | Focus | Ship criteria |
-|--------|-----|-------|---------------|
-| **S1** | P8 | Email pipeline + review API | Sync stats, re-sync, incremental job, parse-review CRUD |
-| **S2** | P8m | Review + sync mobile UI | User sees outcome <10 min after Gmail connect |
-| **S3** | P9 + P10 | Dashboard, detail, settings | Theme, snooze/refund, sync now |
-| **S4** | P11 + P9b | Staging deploy + onboarding polish | Public API URL; funnel events |
-| **S5+** | P12–P14 | Push (Android), wallet, integrations | Deferred until core loop proven |
-
-**Current sprint:** S4 (staging deploy + onboarding polish)
+| Sprint | ID | Status |
+|--------|-----|--------|
+| S1 | P8 API | ✅ Done |
+| S2 | P8m Mobile review/sync | ✅ Done |
+| S3 | P9 + P10 (partial) | ✅ Done |
+| S4 | P11 + P9b + P10 + P12 (in-app) | ✅ Done |
+| S5+ | P12 push / P13 wallet / P14 | ⏸ Deferred |
 
 ---
 
-## P8 — Email → returns pipeline
+## P8 — Email → returns pipeline ✅
 
-### API (S1)
-
-- [x] `POST /emails/:id/sync` — manual re-sync
-- [x] `GET /emails` — enrich with `last_sync_*`, `review_pending_count`, `returns_from_inbox_count`, `last_error`
-- [x] BullMQ repeatable job — incremental sync every 15 min
-- [x] `GET /parse-review` — list pending items for user
-- [x] `POST /parse-review/:id/confirm` — user confirms → create return
-- [x] `POST /parse-review/:id/dismiss` — not a return
-- [x] `GET /users/me` — include `review_pending_count`
-
-### Mobile (S2)
-
-- [x] Dashboard sync status chip + pull-to-refresh
-- [x] Banner: “N receipts need a quick look” → review list
-- [x] Parse review list + confirm/dismiss
-- [x] Settings: Sync now + last sync / error
-- [x] Empty states: syncing / nothing found / items in review
-
-### UX copy (locked)
-
-- Review banner: “We found shopping emails — confirm {n} that need your eyes”
-- Empty (syncing): “Scanning your last 90 days of shopping mail…”
-- Empty (done, nothing): “No return receipts found yet. Try manual add or scan.”
-- Privacy footer on connect: “Read-only · shopping mail only · disconnect anytime”
-
-### Conversion
-
-- Checklist step 2 completes when `returns_count > 0` OR `review_pending_count > 0`
-- Post-Gmail toast: “Connected · scanning last 90 days…”
+- [x] Sync stats, re-sync, incremental sync (15 min)
+- [x] Parse review API + mobile UI
+- [x] Dashboard sync states + checklist integration
 
 ---
 
-## P9 — Dashboard & return detail
+## P9 — Dashboard & return detail ✅
 
-### API
-
-- [x] `GET /returns/:id` — snake_case detail payload with snooze/refund fields
-- [x] `POST /returns/:id/snooze`, `POST /returns/:id/confirm-refund`
-
-### Mobile (S3)
-
-- [x] Apply `lib/theme.ts` to home, settings, add-return, scan, detail
-- [x] Return cards: refund $, urgency colors, days-left pill
-- [x] Return detail: snooze, confirm refund, wallet CTAs
-- [x] Status filter chips on dashboard
-- [x] Header: “$X in refunds to protect”
+- [x] Theme, filters, urgency, refund total
+- [x] Return detail: snooze, refund confirm, wallet
 
 ---
 
-## P9b — Onboarding polish (S4)
+## P9b — Onboarding polish ✅
 
-- [ ] Activation events (analytics-ready hooks)
-- [ ] First-return celebration modal
-- [ ] Smarter checklist completion rules
-
----
-
-## P10 — Settings & trust (S3)
-
-- [ ] Privacy section + legal links
-- [ ] Per-inbox sync status (uses P8 API)
+- [x] `lib/analytics.ts` activation events
+- [x] First-return celebration modal
+- [x] Post-Gmail success banner on checklist
+- [x] Checklist step 2: returns OR review pending
 
 ---
 
-## P11 — Staging deploy (S4)
+## P10 — Settings & trust ✅
 
-- [ ] API on Render/Fly/Railway
-- [ ] Neon + Upstash env on host
-- [ ] `EXPO_PUBLIC_API_URL` → staging URL
-- [ ] CORS + `0.0.0.0` listen
+- [x] Privacy section + Terms/Privacy links (API `/legal/*`)
+- [x] Per-inbox sync now, stats, errors
 
 ---
 
-## P12 — Notifications (S5, partial blockers)
+## P11 — Staging deploy ✅ (config ready)
 
-- **Expo Go:** in-app deadline banners only
-- **Android dev build:** real Expo push (free)
-- **iOS:** requires Apple Developer $99/yr
-
----
-
-## P13 — Wallet production (S5+)
-
-- Apple pkpass + Google Wallet signing (`wallet-certs/`)
-- Defer until P8–P9 proven with real users
+- [x] `render.yaml` blueprint
+- [x] `docs/STAGING_DEPLOY.md`
+- [x] `postinstall` prisma generate on API
+- [x] Optional `CORS_ORIGINS` env
+- [ ] **You deploy:** Render + set `EXPO_PUBLIC_API_URL` to staging URL
 
 ---
 
-## P14 — Deferred integrations
+## P12 — Notifications (partial) ✅ in-app / ⏸ push
 
-| Integration | Trigger to start |
-|-------------|------------------|
-| EasyPost | Returns regularly reach `ready_to_ship` |
-| Plaid | Manual refund confirm flow stable |
-| Go email-worker | API sync bottlenecks |
-| Forward-in email | Growth phase |
+- [x] In-app next-deadline banner (≤7 days) on dashboard
+- [x] Honest copy: push needs dev build, not Expo Go
+- ⏸ Android dev build + real push
+- ⏸ iOS push (Apple Developer $99)
 
 ---
 
-## Success metrics by workstream
+## P13–P14 — Deferred
 
-| Workstream | Metric | Target |
-|------------|--------|--------|
-| P8 | Gmail → first visible item | < 10 min median |
-| P8 | Auto-parse precision (top merchants) | ≥ 92% |
-| P9 | D1 dashboard revisit | ≥ 40% |
-| P9b | Gmail connect within 24h | ≥ 65% |
-| P10 | Disconnect after sync | < 10% |
-| P11 | API uptime | ≥ 99.5% |
-| P12 | Push opt-in (dev build) | ≥ 50% |
-| P13 | Wallet add on ready_to_ship | ≥ 30% |
+Wallet production certs, Plaid, EasyPost, Go email-worker.
 
 ---
 
@@ -178,14 +93,31 @@ Dashboard → Return Detail → Wallet / Snooze / Refund confirm
 | Date | Sprint | Change |
 |------|--------|--------|
 | 2026-06-08 | — | Phase 2 roadmap locked |
-| 2026-06-08 | S1 | Sync stats, re-sync, parse-review API, incremental sync, mobile S2 screens |
-| 2026-06-08 | S3 | Dashboard filters/urgency, return detail actions, theme pass |
+| 2026-06-08 | S1 | Sync stats, re-sync, parse-review API, incremental sync |
+| 2026-06-08 | S2 | Review + sync mobile UI |
+| 2026-06-08 | S3 | Dashboard filters/urgency, return detail actions |
+| 2026-06-08 | S4 | Analytics, celebration, privacy, staging deploy, deadline banner |
+
+---
+
+## Smoke test checklist (run once after restart)
+
+See conversation / QA list:
+
+1. Welcome carousel → checklist
+2. Gmail connect → success banner → sync chip
+3. Review queue confirm/dismiss
+4. Dashboard filters + pull-to-refresh + celebration modal
+5. Return detail snooze + refund confirm
+6. Settings sync now + legal links open
+7. Manual add + scan receipt
+8. API health if staging deployed
 
 ---
 
 ## References
 
-- [BLUEPRINT.md](./BLUEPRINT.md) — architecture & P0–P7
+- [BLUEPRINT.md](./BLUEPRINT.md)
+- [STAGING_DEPLOY.md](./STAGING_DEPLOY.md)
 - [GOOGLE_OAUTH_SETUP.md](./GOOGLE_OAUTH_SETUP.md)
 - [DEV_BUILD.md](./DEV_BUILD.md)
-- [openapi.yaml](./openapi.yaml)

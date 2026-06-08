@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Link, router, useFocusEffect } from 'expo-router';
+import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -41,6 +42,7 @@ export default function ParseReviewScreen() {
     setActing(id);
     try {
       await api.confirmParseReview(id, {});
+      trackEvent('parse_review_confirmed');
       await load();
       router.replace('/');
     } finally {

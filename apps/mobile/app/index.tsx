@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -9,7 +10,9 @@ import {
   View,
 } from 'react-native';
 import { Link, router, useFocusEffect } from 'expo-router';
+import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken } from '../lib/api';
+import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../lib/celebration';
 import { registerForPushNotifications } from '../lib/notifications';
 import { colors } from '../lib/theme';
 import { formatDaysRemaining, getUrgencyColor } from '../lib/urgency';
@@ -42,6 +45,7 @@ export default function HomeScreen() {
   const [inboxSyncing, setInboxSyncing] = useState(false);
   const [linkedCount, setLinkedCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -62,6 +66,11 @@ export default function HomeScreen() {
         statusFilter === 'all_active' ? undefined : statusFilter,
       );
       setReturns(res.data);
+      if (res.data.length > 0 && !(await hasCelebratedFirstReturn())) {
+        trackEvent('first_return_visible', { count: res.data.length });
+        await markFirstReturnCelebrated();
+        setShowCelebration(true);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -86,8 +95,26 @@ export default function HomeScreen() {
 
   const refundTotal = returns.reduce((sum, r) => sum + (r.expected_refund_amount ?? 0), 0);
 
+  const nextDeadline = returns
+    .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
+    .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
+
   return (
     <View style={styles.container}>
+      <Modal visible={showCelebration} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalEmoji}>🎉</Text>
+            <Text style={styles.modalTitle}>You&apos;re protected</Text>
+            <Text style={styles.modalBody}>
+              We&apos;ll remind you before your return deadlines — so refunds don&apos;t slip away.
+            </Text>
+            <Pressable style={styles.modalBtn} onPress={() => setShowCelebration(false)}>
+              <Text style={styles.modalBtnText}>Got it</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
       <View style={styles.header}>
         <Text style={styles.title}>ReturnRider</Text>
         <Link href="/settings">
@@ -99,6 +126,19 @@ export default function HomeScreen() {
         <View style={styles.syncChip}>
           <Text style={styles.syncChipText}>Scanning shopping mail…</Text>
         </View>
+      )}
+
+      {nextDeadline && nextDeadline.days_remaining != null && nextDeadline.days_remaining <= 7 && (
+        <Link href={`/returns/${nextDeadline.id}`} asChild>
+          <Pressable style={styles.deadlineBanner}>
+            <Text style={styles.deadlineBannerTitle}>
+              Next up: {nextDeadline.merchant_name} — {formatDaysRemaining(nextDeadline.days_remaining)}
+            </Text>
+            <Text style={styles.deadlineBannerSub}>
+              Tap for details · Push reminders need the ReturnRider app (not Expo Go)
+            </Text>
+          </Pressable>
+        </Link>
       )}
 
       {reviewPending > 0 && (
@@ -281,4 +321,42 @@ const styles = StyleSheet.create({
   },
   actionSecondary: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.accent },
   actionText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  deadlineBanner: {
+    backgroundColor: 'rgba(245, 166, 35, 0.12)',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#f5a623',
+  },
+  deadlineBannerTitle: { color: colors.text, fontWeight: '600', fontSize: 14 },
+  deadlineBannerSub: { color: colors.textMuted, fontSize: 11, marginTop: 4 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  modalCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 20,
+    padding: 28,
+    alignItems: 'center',
+  },
+  modalEmoji: { fontSize: 48 },
+  modalTitle: { color: colors.text, fontSize: 22, fontWeight: '700', marginTop: 12 },
+  modalBody: {
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 10,
+  },
+  modalBtn: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 32,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginTop: 20,
+  },
+  modalBtnText: { color: '#fff', fontWeight: '700' },
 });

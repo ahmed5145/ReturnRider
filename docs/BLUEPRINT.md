@@ -171,11 +171,11 @@ Production requires certs in `wallet-certs/` — see [wallet-certs/README.md](..
 | P5 | Multi-email settings | Done |
 | P6 | Receipt scan + confirm | Done |
 | P7 | Wallet production certs docs + signing path | Done |
-| P8 | Email pipeline + parse review | Done (S1–S2) |
-| P9 | Dashboard + return detail UX | Done (S3) |
-| P10 | Settings & trust | Planned |
-| P11 | Staging deploy | Planned |
-| P12 | Push (dev build) | Planned |
+| P8 | Email pipeline + parse review | Done |
+| P9 | Dashboard + return detail UX | Done |
+| P10 | Settings & trust | Done |
+| P11 | Staging deploy (config + docs) | Done — deploy when ready |
+| P12 | In-app deadlines; push dev build | Partial — in-app done |
 | P13 | Wallet production | Deferred |
 | P14 | Plaid / EasyPost | Deferred |
 

@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { trackEvent } from '../../lib/analytics';
 import { api } from '../../lib/api';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
 import { colors } from '../../lib/theme';
@@ -86,6 +87,7 @@ export default function ReturnDetailScreen() {
     setActing(true);
     try {
       await api.confirmRefund(id, amount);
+      trackEvent('refund_confirmed', { amount });
       await load();
       Alert.alert('Refund recorded', 'Nice — we marked this return complete.');
     } catch (e) {

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
+import { trackEvent } from '../lib/analytics';
 import { colors } from '../lib/theme';
 
 const SLIDES = [
@@ -99,6 +100,10 @@ export default function WelcomeScreen() {
   const [index, setIndex] = useState(0);
   const ref = useRef<FlatList>(null);
   const width = Dimensions.get('window').width;
+
+  useEffect(() => {
+    trackEvent('onboarding_started');
+  }, []);
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / width);

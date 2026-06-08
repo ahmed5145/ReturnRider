@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { trackEvent } from '../../lib/analytics';
 import { connectGmail } from '../../lib/google-auth';
 import {
   getAppReturnUri,
@@ -21,6 +22,7 @@ export default function ConnectEmailScreen() {
     setError(null);
     try {
       const result = await connectGmail(sync180 ? 180 : 90);
+      trackEvent('gmail_connected', { email: result.email_address });
       router.replace({
         pathname: '/onboarding/checklist',
         params: { connected: result.email_address },
@@ -80,6 +82,9 @@ export default function ConnectEmailScreen() {
           <Text style={styles.btnText}>Connect with Google</Text>
         )}
       </Pressable>
+      <Text style={styles.privacyFooter}>
+        Read-only · shopping mail only · disconnect anytime
+      </Text>
     </View>
   );
 }
@@ -124,4 +129,11 @@ const styles = StyleSheet.create({
     marginTop: 32,
   },
   btnText: { color: '#fff', fontWeight: '600' },
+  privacyFooter: {
+    color: '#6b7a8f',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 16,
+    lineHeight: 18,
+  },
 });

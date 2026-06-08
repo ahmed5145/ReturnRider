@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Link, router } from 'expo-router';
+import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
 
@@ -20,6 +21,7 @@ export default function AddReturnScreen() {
       await ensureAuthToken();
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + parseInt(days, 10));
+      trackEvent('manual_return_added', { merchant });
       await api.createManualReturn({
         merchant_name: merchant,
         external_order_id: orderId,
