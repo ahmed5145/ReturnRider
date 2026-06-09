@@ -40,10 +40,12 @@ interface ReturnSummary {
   merchant_name: string;
   item_summary: string;
   status: string;
-  return_deadline_at: string | null;
-  days_remaining: number | null;
-  has_wallet_pass: boolean;
+  /** Active returns only */
+  return_deadline_at?: string | null;
+  days_remaining?: number | null;
+  has_wallet_pass?: boolean;
   expected_refund_amount: number | null;
+  /** Completed returns only */
   refund_amount?: number | null;
   refunded_at?: string | null;
 }
