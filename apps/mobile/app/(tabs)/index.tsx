@@ -16,6 +16,7 @@ import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../../lib/c
 import { getMerchantEmoji } from '../../lib/merchant-icons';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/theme';
+import { getActiveCampaign } from '../../lib/campaigns';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
 
 type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
@@ -117,6 +118,8 @@ export default function HomeScreen() {
           .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
           .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
 
+  const campaign = statusFilter !== 'completed' ? getActiveCampaign() : null;
+
   return (
     <View style={styles.container}>
       <Modal visible={showCelebration} transparent animationType="fade">
@@ -135,6 +138,13 @@ export default function HomeScreen() {
       </Modal>
 
       <Text style={styles.title}>ReturnRider</Text>
+
+      {campaign && (
+        <View style={styles.campaignBanner}>
+          <Text style={styles.campaignTitle}>{campaign.title}</Text>
+          <Text style={styles.campaignBody}>{campaign.body}</Text>
+        </View>
+      )}
 
       {inboxSyncing && (
         <View style={styles.syncChip}>
@@ -312,6 +322,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 56, backgroundColor: colors.bg },
   title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 4 },
+  campaignBanner: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  campaignTitle: { color: colors.text, fontWeight: '700', fontSize: 14 },
+  campaignBody: { color: colors.textMuted, fontSize: 13, marginTop: 6, lineHeight: 18 },
   syncChip: {
     alignSelf: 'flex-start',
     backgroundColor: colors.accentSoft,

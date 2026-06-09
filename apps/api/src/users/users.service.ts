@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+
+const REFERRAL_SYNC_BONUS_DAYS = 180;
 
 @Injectable()
 export class UsersService {
@@ -55,6 +57,69 @@ export class UsersService {
       inbox_syncing: anySyncing,
       has_push_token: !!user.expoPushToken,
       has_plaid_linked: !!user.plaidAccessTokenEnc,
+      referral_code: await this.ensureReferralCode(user.id),
+      referrals_count: await this.prisma.user.count({
+        where: { referredByUserId: user.id },
+      }),
+      referred_by_applied: !!user.referredByUserId,
+    };
+  }
+
+  private referralCodeFromId(userId: string): string {
+    return userId.replace(/-/g, '').slice(0, 8).toUpperCase();
+  }
+
+  async ensureReferralCode(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { referralCode: true },
+    });
+    if (user.referralCode) {
+      return user.referralCode;
+    }
+    const code = this.referralCodeFromId(userId);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { referralCode: code },
+    });
+    return code;
+  }
+
+  async applyReferralCode(userId: string, rawCode: string) {
+    const code = rawCode.trim().toUpperCase();
+    if (!code) {
+      throw new BadRequestException('Referral code required');
+    }
+
+    const user = await this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { referredByUserId: true },
+    });
+    if (user.referredByUserId) {
+      throw new BadRequestException('You already used a referral code');
+    }
+
+    const referrer = await this.prisma.user.findFirst({
+      where: { referralCode: code, status: 'active' },
+    });
+    if (!referrer || referrer.id === userId) {
+      throw new BadRequestException('Invalid referral code');
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { referredByUserId: referrer.id },
+      }),
+      this.prisma.linkedEmail.updateMany({
+        where: { userId: referrer.id },
+        data: { syncWindowDays: REFERRAL_SYNC_BONUS_DAYS },
+      }),
+    ]);
+
+    return {
+      applied: true,
+      message: `Thanks! Your friend now gets ${REFERRAL_SYNC_BONUS_DAYS}-day email sync.`,
     };
   }
 

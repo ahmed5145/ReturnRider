@@ -92,7 +92,16 @@ export const api = {
       inbox_syncing: boolean;
       has_push_token: boolean;
       has_plaid_linked: boolean;
+      referral_code?: string;
+      referrals_count?: number;
+      referred_by_applied?: boolean;
     }>('/users/me'),
+
+  applyReferralCode: (code: string) =>
+    request<{ applied: boolean; message: string }>('/users/referral/apply', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    }),
 
   testPush: () =>
     request<{ sent: boolean; reason?: string }>('/users/test-push', { method: 'POST', body: '{}' }),

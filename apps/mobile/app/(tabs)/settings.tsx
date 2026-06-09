@@ -7,13 +7,14 @@ import {
   Share,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../../lib/api-base';
 import { router } from 'expo-router';
 import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
-import { getInviteShareMessage } from '../../lib/invite';
+import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
 import { openUrl } from '../../lib/open-url';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { registerForPushNotifications } from '../../lib/notifications';
@@ -40,6 +41,11 @@ export default function SettingsScreen() {
   const [hasPlaid, setHasPlaid] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
   const [plaidLoading, setPlaidLoading] = useState(false);
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+  const [referralsCount, setReferralsCount] = useState(0);
+  const [referredApplied, setReferredApplied] = useState(false);
+  const [referralInput, setReferralInput] = useState('');
+  const [referralLoading, setReferralLoading] = useState(false);
 
   const load = async () => {
     await ensureAuthToken();
@@ -47,6 +53,9 @@ export default function SettingsScreen() {
     setEmails(res.data);
     setHasPush(me.has_push_token);
     setHasPlaid(me.has_plaid_linked);
+    setReferralCode(me.referral_code ?? null);
+    setReferralsCount(me.referrals_count ?? 0);
+    setReferredApplied(!!me.referred_by_applied);
     setLoading(false);
   };
 
@@ -122,7 +131,25 @@ export default function SettingsScreen() {
   };
 
   const inviteFriends = async () => {
-    await Share.share({ message: getInviteShareMessage() });
+    await Share.share({
+      message: getInviteShareMessage(referralCode ?? undefined),
+    });
+  };
+
+  const applyReferral = async () => {
+    const code = referralInput.trim();
+    if (!code) return;
+    setReferralLoading(true);
+    try {
+      const res = await api.applyReferralCode(code);
+      Alert.alert('Referral applied', res.message);
+      setReferralInput('');
+      await load();
+    } catch (e) {
+      Alert.alert('Could not apply', e instanceof Error ? e.message : 'Check the code');
+    } finally {
+      setReferralLoading(false);
+    }
   };
 
   const openLegal = async (path: 'privacy' | 'terms') => {
@@ -202,10 +229,41 @@ export default function SettingsScreen() {
       <Text style={styles.title}>Settings</Text>
 
       <Text style={styles.section}>Invite</Text>
-      <Pressable style={styles.inviteCard} onPress={inviteFriends}>
+      <View style={styles.inviteCard}>
         <Text style={styles.inviteTitle}>Protect a friend&apos;s refund</Text>
-        <Text style={styles.hint}>Share ReturnRider — help someone never miss a deadline.</Text>
-      </Pressable>
+        <Text style={styles.hint}>
+          Share your link. When they join, you get 180-day email sync (vs 90).
+        </Text>
+        {referralCode && (
+          <Text style={styles.referralCode} selectable>
+            {getReferralLink(referralCode)}
+          </Text>
+        )}
+        {referralsCount > 0 && (
+          <Text style={styles.hint}>{referralsCount} friend{referralsCount === 1 ? '' : 's'} joined</Text>
+        )}
+        <Pressable onPress={inviteFriends}>
+          <Text style={styles.syncLink}>Share invite link →</Text>
+        </Pressable>
+        {!referredApplied && (
+          <>
+            <Text style={[styles.hint, { marginTop: 12 }]}>Have a friend&apos;s code?</Text>
+            <TextInput
+              style={styles.referralInput}
+              value={referralInput}
+              onChangeText={setReferralInput}
+              placeholder="e.g. A1B2C3D4"
+              placeholderTextColor={colors.textDim}
+              autoCapitalize="characters"
+            />
+            <Pressable onPress={applyReferral} disabled={referralLoading}>
+              <Text style={styles.syncLink}>
+                {referralLoading ? 'Applying…' : 'Apply referral code'}
+              </Text>
+            </Pressable>
+          </>
+        )}
+      </View>
 
       <Text style={styles.section}>Account</Text>
       <Pressable style={styles.inviteCard} onPress={resetSession}>
@@ -373,6 +431,23 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   inviteTitle: { color: colors.text, fontWeight: '700', fontSize: 15 },
+  referralCode: {
+    color: colors.textMuted,
+    fontSize: 12,
+    marginTop: 8,
+    marginBottom: 4,
+    fontFamily: 'monospace',
+  },
+  referralInput: {
+    backgroundColor: colors.bg,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 10,
+    color: colors.text,
+    marginTop: 6,
+    marginBottom: 8,
+  },
   privacyItem: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
   notifCard: {
     backgroundColor: colors.bgCard,

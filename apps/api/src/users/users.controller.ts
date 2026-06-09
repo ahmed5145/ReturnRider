@@ -23,6 +23,11 @@ class DeleteAccountDto {
   confirm!: string;
 }
 
+class ApplyReferralDto {
+  @IsString()
+  code!: string;
+}
+
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
@@ -62,6 +67,11 @@ export class UsersController {
   @Get('me/export')
   async exportData(@CurrentUser() user: User) {
     return this.usersService.exportUserData(user.id);
+  }
+
+  @Post('referral/apply')
+  async applyReferral(@CurrentUser() user: User, @Body() dto: ApplyReferralDto) {
+    return this.usersService.applyReferralCode(user.id, dto.code);
   }
 
   @Delete('me')

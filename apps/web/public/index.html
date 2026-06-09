@@ -213,6 +213,16 @@
       </p>
     </section>
 
+    <script>
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var ref = params.get('ref');
+        if (ref) {
+          try { sessionStorage.setItem('returnrider_ref', ref); } catch (e) {}
+        }
+      })();
+    </script>
+
     <footer>
       <p>© ReturnRider · Flight tracker for your refunds</p>
       <p style="margin-top:12px">

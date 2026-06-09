@@ -1,8 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,7 +30,9 @@ export default function ReturnDetailScreen() {
   const [walletHintShown, setWalletHintShown] = useState(false);
   const [showRefundCelebration, setShowRefundCelebration] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState(0);
+  const [celebrationYtd, setCelebrationYtd] = useState<number | undefined>();
   const [trackingInput, setTrackingInput] = useState('');
+  const hapticFired = useRef(false);
 
   const load = async () => {
     if (!id) return;
@@ -48,9 +52,24 @@ export default function ReturnDetailScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      hapticFired.current = false;
       load();
     }, [id]),
   );
+
+  useEffect(() => {
+    if (
+      Platform.OS === 'web' ||
+      hapticFired.current ||
+      !data?.days_remaining ||
+      data.days_remaining > 3 ||
+      data.days_remaining < 0
+    ) {
+      return;
+    }
+    hapticFired.current = true;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+  }, [data?.days_remaining]);
 
   const showWalletHelp = () => {
     if (walletHintShown) return;
@@ -184,9 +203,13 @@ export default function ReturnDetailScreen() {
     }
     setActing(true);
     try {
-      await api.confirmRefund(id, amount);
+      const [_, stats] = await Promise.all([
+        api.confirmRefund(id, amount),
+        api.getReturnStats(),
+      ]);
       trackEvent('refund_confirmed', { amount });
       setCelebrationAmount(amount);
+      setCelebrationYtd(stats.refunded_ytd);
       setShowRefundCelebration(true);
       await load();
     } catch (e) {
@@ -229,6 +252,7 @@ export default function ReturnDetailScreen() {
         visible={showRefundCelebration}
         amount={celebrationAmount}
         merchant={data.merchant_name}
+        refundedYtd={celebrationYtd}
         onClose={() => {
           setShowRefundCelebration(false);
           router.replace('/');

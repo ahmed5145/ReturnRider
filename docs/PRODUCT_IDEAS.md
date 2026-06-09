@@ -209,5 +209,6 @@ Phase 4 — Growth
 | 2026-06-09 | P3a-01–07 | Stats hero, completed tab, trust screen, landing page, merchant links, parser feedback |
 | 2026-06-09 | P3a-04, UX-01/08/09, P3b-06 | Push test API, skeleton, celebration+share, smart snooze, merchant emoji |
 | 2026-06-09 | TRUST-02/03/04, MKT-05 | Data export, delete account, parser confidence, privacy table on landing |
+| 2026-06-09 | MKT-01/02/06/07, UX-02 | Referral program, campaign banner, refund share card, haptics, press kit |
 | — | P3a-04 Android push | APK via EAS — emulator or friend's phone if no Android device |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |

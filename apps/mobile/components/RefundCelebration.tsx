@@ -1,18 +1,27 @@
 import { Modal, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { buildRefundShareMessage } from '../lib/share-card';
 import { colors } from '../lib/theme';
 
 interface Props {
   visible: boolean;
   amount: number;
   merchant: string;
+  refundedYtd?: number;
   onClose: () => void;
 }
 
-export function RefundCelebration({ visible, amount, merchant, onClose }: Props) {
+export function RefundCelebration({
+  visible,
+  amount,
+  merchant,
+  refundedYtd,
+  onClose,
+}: Props) {
   const share = async () => {
     try {
       await Share.share({
-        message: `Just got my $${amount.toFixed(2)} refund from ${merchant} — ReturnRider kept me on track! 🎉`,
+        message: buildRefundShareMessage(amount, merchant, refundedYtd),
+        title: 'Refund secured',
       });
     } catch {
       // user dismissed
