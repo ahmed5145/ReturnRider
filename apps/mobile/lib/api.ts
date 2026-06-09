@@ -100,6 +100,14 @@ export const api = {
   completeOnboarding: () =>
     request('/users/onboarding-complete', { method: 'POST', body: '{}' }),
 
+  exportMyData: () => request<Record<string, unknown>>('/users/me/export'),
+
+  deleteAccount: () =>
+    request<{ deleted: boolean; deleted_at?: string; error?: string }>('/users/me', {
+      method: 'DELETE',
+      body: JSON.stringify({ confirm: 'DELETE' }),
+    }),
+
   registerPushToken: (expo_push_token: string) =>
     request('/users/push-token', {
       method: 'POST',
@@ -256,6 +264,7 @@ export const api = {
         merchant_guess: string | null;
         raw_snippet: string | null;
         confidence: number;
+        confidence_reason?: string;
         created_at: string;
       }>;
     }>('/parse-review'),

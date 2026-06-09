@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 import { User } from '@prisma/client';
@@ -16,6 +16,11 @@ class OnboardingDto {
   @IsOptional()
   @IsString()
   display_name?: string;
+}
+
+class DeleteAccountDto {
+  @IsString()
+  confirm!: string;
 }
 
 @ApiTags('users')
@@ -52,5 +57,19 @@ export class UsersController {
   @Post('onboarding-complete')
   async onboardingComplete(@CurrentUser() user: User, @Body() dto: OnboardingDto) {
     return this.usersService.completeOnboarding(user.id, dto.display_name);
+  }
+
+  @Get('me/export')
+  async exportData(@CurrentUser() user: User) {
+    return this.usersService.exportUserData(user.id);
+  }
+
+  @Delete('me')
+  @HttpCode(200)
+  async deleteAccount(@CurrentUser() user: User, @Body() dto: DeleteAccountDto) {
+    if (dto.confirm !== 'DELETE') {
+      return { deleted: false, error: 'Send { "confirm": "DELETE" } to confirm' };
+    }
+    return this.usersService.deleteAccount(user.id);
   }
 }

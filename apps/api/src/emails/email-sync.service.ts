@@ -12,6 +12,7 @@ import { parseReceipt } from '../parsers/merchants';
 import { ParsedReceipt } from '../parsers/types';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { explainParseConfidence } from '../common/parse-confidence';
 import { ConfirmParseReviewDto } from './dto/confirm-parse-review.dto';
 import { GmailService } from './gmail.service';
 
@@ -124,6 +125,10 @@ export class EmailSyncService {
         merchant_guess: item.merchantGuess,
         raw_snippet: item.rawSnippet,
         confidence: Number(item.confidence),
+        confidence_reason: explainParseConfidence(
+          Number(item.confidence),
+          item.merchantGuess,
+        ),
         status: item.status,
         created_at: item.createdAt.toISOString(),
       })),

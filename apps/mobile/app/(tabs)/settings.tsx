@@ -124,6 +124,47 @@ export default function SettingsScreen() {
     router.replace('/');
   };
 
+  const downloadMyData = async () => {
+    try {
+      const data = await api.exportMyData();
+      const json = JSON.stringify(data, null, 2);
+      await Share.share({
+        message: json,
+        title: 'ReturnRider data export',
+      });
+    } catch (e) {
+      Alert.alert('Export failed', e instanceof Error ? e.message : 'Try again');
+    }
+  };
+
+  const deleteMyAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'This disconnects Gmail, removes your profile, and signs you out. Returns stay in our backup for 30 days per our privacy policy, then are purged.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const res = await api.deleteAccount();
+              if (!res.deleted) {
+                Alert.alert('Not deleted', res.error ?? 'Try again');
+                return;
+              }
+              await clearAuthToken();
+              Alert.alert('Account deleted', 'You have been signed out.');
+              router.replace('/welcome');
+            } catch (e) {
+              Alert.alert('Failed', e instanceof Error ? e.message : 'Try again');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const formatLastSync = (iso: string | null | undefined) => {
     if (!iso) return 'Never synced';
     const d = new Date(iso);
@@ -170,6 +211,12 @@ export default function SettingsScreen() {
         </Pressable>
         <Pressable onPress={() => Linking.openURL(legalUrl('terms'))}>
           <Text style={styles.legalLink}>Terms of Service →</Text>
+        </Pressable>
+        <Pressable onPress={downloadMyData} style={styles.dataAction}>
+          <Text style={styles.legalLink}>Download my data (JSON) →</Text>
+        </Pressable>
+        <Pressable onPress={deleteMyAccount} style={styles.dataAction}>
+          <Text style={styles.dangerLink}>Delete account →</Text>
         </Pressable>
       </View>
 
@@ -324,6 +371,8 @@ const styles = StyleSheet.create({
   },
   notifStatus: { color: colors.text, fontWeight: '600', fontSize: 14 },
   legalLink: { color: colors.accent, fontWeight: '600', fontSize: 14, marginTop: 8 },
+  dataAction: { marginTop: 4 },
+  dangerLink: { color: '#ff6b6b', fontWeight: '600', fontSize: 14, marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 16 },
   section: { color: colors.text, fontWeight: '600', fontSize: 16, marginTop: 4 },

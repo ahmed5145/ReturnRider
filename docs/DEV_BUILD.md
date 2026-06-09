@@ -29,9 +29,34 @@ When you are ready:
 
 ---
 
+## No Android phone?
+
+You can still develop and smoke-test almost everything in **Expo Go** on any phone (including iPhone):
+
+```cmd
+cd apps\mobile
+npx expo start --go -c
+```
+
+| Works in Expo Go | Needs dev APK / Apple |
+|------------------|------------------------|
+| Gmail, dashboard, returns, snooze | Push notifications |
+| Parse review, manual add, settings | Plaid bank link |
+| Staging API (`returnrider-api.onrender.com`) | Google / Apple Wallet |
+
+**Optional — Android emulator** (for push without a physical device):
+
+1. Install [Android Studio](https://developer.android.com/studio) + create a virtual device (API 34+).
+2. When the EAS `.apk` finishes, drag the APK onto the emulator or `adb install app.apk`.
+3. Run `npm run start:dev-client` and open the app in the emulator.
+
+You can also share the APK install link with a friend who has Android.
+
+---
+
 ## Android (no Apple account needed)
 
-If you have an Android phone, you can build and install a dev client for **free**:
+If you have an Android phone (or emulator), you can build and install a dev client for **free**:
 
 ```cmd
 cd apps\mobile

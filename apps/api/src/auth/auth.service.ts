@@ -27,6 +27,9 @@ export class AuthService {
     let user = await this.prisma.user.findUnique({
       where: { externalAuthId: payload.sub },
     });
+    if (user?.status === 'deleted') {
+      throw new UnauthorizedException('Account deleted');
+    }
     if (!user) {
       user = await this.prisma.user.create({
         data: {

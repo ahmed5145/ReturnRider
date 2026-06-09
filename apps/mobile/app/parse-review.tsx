@@ -18,6 +18,7 @@ interface ReviewItem {
   merchant_guess: string | null;
   raw_snippet: string | null;
   confidence: number;
+  confidence_reason?: string;
 }
 
 export default function ParseReviewScreen() {
@@ -131,7 +132,8 @@ export default function ParseReviewScreen() {
             <Text style={styles.merchant}>{item.merchant_guess ?? 'Unknown store'}</Text>
             <Text style={styles.snippet}>{item.raw_snippet ?? 'Receipt email'}</Text>
             <Text style={styles.confidence}>
-              {Math.round(item.confidence * 100)}% match
+              {item.confidence_reason ??
+                `${Math.round(item.confidence * 100)}% match — verify before tracking`}
             </Text>
             <View style={styles.row}>
               <Pressable

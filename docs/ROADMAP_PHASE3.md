@@ -70,9 +70,9 @@ cd apps/api && npx prisma generate
 
 ---
 
-## Phase 4 — Growth
+## Phase 4 — Growth & trust
 
-See [PRODUCT_IDEAS.md](./PRODUCT_IDEAS.md) Tier 3 (MKT-01–07).
+See [ROADMAP_PHASE4.md](./ROADMAP_PHASE4.md). Phase 4a (export, delete account, parser confidence) is **done**.
 
 ---
 
