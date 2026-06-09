@@ -1,4 +1,5 @@
 import { getApiOrigin } from './api-base';
+import { fetchWithRetry } from './http';
 
 export interface ApiHealth {
   status: string;
@@ -10,7 +11,7 @@ export interface ApiHealth {
 }
 
 export async function fetchApiHealth(): Promise<ApiHealth> {
-  const res = await fetch(`${getApiOrigin()}/health`);
+  const res = await fetchWithRetry(`${getApiOrigin()}/health`, { method: 'GET' });
   if (!res.ok) {
     throw new Error(`Health check failed (${res.status})`);
   }

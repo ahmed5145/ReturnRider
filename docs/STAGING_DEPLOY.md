@@ -133,5 +133,7 @@ Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_E
 | `nest: not found` on Render | `NODE_ENV=production` skips devDeps — use `NPM_CONFIG_PRODUCTION=false` in build (see `render.yaml`) |
 | Build fails on Prisma | Ensure `DATABASE_URL` set; `postinstall` runs `prisma generate` |
 | 502 on wake | Free tier cold start — wait 30–60s |
+| `Network request timed out` on phone | Render slept — open `/health` in Safari first, then pull to refresh in app. App now retries once with a longer timeout. |
+| Timeouts keep happening | Confirm `apps/mobile/.env` uses `https://returnrider-api.onrender.com/api/v1` (not `localhost` or old LAN IP) |
 | Gmail token exchange fails | `GOOGLE_CLIENT_ID` / `SECRET` match mobile client |
 | Sync not running | Check `REDIS_URL`; Upstash must allow BullMQ connections |

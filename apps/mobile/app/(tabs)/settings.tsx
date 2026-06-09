@@ -15,7 +15,7 @@ import { legalUrl } from '../../lib/api-base';
 import { fetchApiHealth } from '../../lib/health';
 import { router } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
-import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
+import { api, clearAuthToken, ensureAuthToken, formatNetworkError } from '../../lib/api';
 import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
 import { openUrl } from '../../lib/open-url';
 import { connectPlaidBank } from '../../lib/plaid-link';
@@ -54,25 +54,30 @@ export default function SettingsScreen() {
   const [serverPlaidReady, setServerPlaidReady] = useState<boolean | null>(null);
 
   const load = async () => {
-    await ensureAuthToken();
-    const [res, me, health] = await Promise.all([
-      api.listEmails(),
-      api.getMe(),
-      fetchApiHealth().catch(() => null),
-    ]);
-    setServerPlaidReady(health?.features?.plaid ?? null);
-    setEmails(res.data);
-    setHasPush(me.has_push_token);
-    setHasPlaid(me.has_plaid_linked);
-    setReferralCode(me.referral_code ?? null);
-    setReferralsCount(me.referrals_count ?? 0);
-    setReferredApplied(!!me.referred_by_applied);
-    setLoading(false);
+    try {
+      await ensureAuthToken();
+      const [res, me, health] = await Promise.all([
+        api.listEmails(),
+        api.getMe(),
+        fetchApiHealth().catch(() => null),
+      ]);
+      setServerPlaidReady(health?.features?.plaid ?? null);
+      setEmails(res.data);
+      setHasPush(me.has_push_token);
+      setHasPlaid(me.has_plaid_linked);
+      setReferralCode(me.referral_code ?? null);
+      setReferralsCount(me.referrals_count ?? 0);
+      setReferredApplied(!!me.referred_by_applied);
+    } catch (e) {
+      Alert.alert('Could not load settings', formatNetworkError(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      void load().catch(() => {});
     }, []),
   );
 

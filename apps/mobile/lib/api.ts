@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import { fetchWithRetry } from './http';
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 const TOKEN_KEY = 'auth_token';
@@ -12,7 +13,7 @@ async function request<T>(path: string, options: RequestInit = {}, retried = fal
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const res = await fetchWithRetry(`${API_BASE}${path}`, { ...options, headers });
   if (res.status === 401 && !retried && path !== '/auth/dev-token') {
     await clearAuthToken();
     await ensureAuthToken();
@@ -27,6 +28,8 @@ async function request<T>(path: string, options: RequestInit = {}, retried = fal
   }
   return {} as T;
 }
+
+export { formatNetworkError } from './http';
 
 export async function getAuthToken(): Promise<string | null> {
   if (Platform.OS === 'web') {

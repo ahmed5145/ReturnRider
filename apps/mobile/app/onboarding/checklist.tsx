@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
-import { api, ensureAuthToken } from '../../lib/api';
+import { api, ensureAuthToken, formatNetworkError } from '../../lib/api';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { useTheme } from '../../lib/ThemeProvider';
@@ -33,6 +33,8 @@ export default function ChecklistScreen() {
       setReviewPending(me.review_pending_count ?? 0);
       setPushDone(me.has_push_token);
       setPlaidDone(me.has_plaid_linked);
+    } catch (e) {
+      console.warn('Checklist refresh failed:', formatNetworkError(e));
     } finally {
       setRefreshing(false);
     }
@@ -40,7 +42,7 @@ export default function ChecklistScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      refreshProgress();
+      void refreshProgress().catch(() => {});
     }, [refreshProgress]),
   );
 

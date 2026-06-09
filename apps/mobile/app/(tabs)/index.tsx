@@ -13,7 +13,7 @@ import { Link, router, useFocusEffect } from 'expo-router';
 import { ReturnListCard } from '../../components/ReturnListCard';
 import { DashboardSkeleton } from '../../components/DashboardSkeleton';
 import { trackEvent } from '../../lib/analytics';
-import { api, ensureAuthToken } from '../../lib/api';
+import { api, ensureAuthToken, formatNetworkError } from '../../lib/api';
 import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../../lib/celebration';
 import { getActiveCampaign } from '../../lib/campaigns';
 import { registerForPushNotifications } from '../../lib/notifications';
@@ -84,7 +84,7 @@ export default function HomeScreen() {
       setReviewPending(me.review_pending_count ?? 0);
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
-      await registerForPushNotifications();
+      void registerForPushNotifications().catch(() => {});
       const [statsRes, returnsRes] = await Promise.all([
         api.getReturnStats(),
         statusFilter === 'completed'
@@ -101,7 +101,7 @@ export default function HomeScreen() {
         setShowCelebration(true);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load');
+      setError(formatNetworkError(e));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -110,7 +110,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      void load().catch(() => {});
     }, [statusFilter]),
   );
 

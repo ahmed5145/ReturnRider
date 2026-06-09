@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { trackEvent } from '../lib/analytics';
-import { api, ensureAuthToken } from '../lib/api';
+import { api, ensureAuthToken, formatNetworkError } from '../lib/api';
 import { colors } from '../lib/theme';
 
 interface ReviewItem {
@@ -28,15 +28,20 @@ export default function ParseReviewScreen() {
 
   const load = async () => {
     setLoading(true);
-    await ensureAuthToken();
-    const res = await api.listParseReview();
-    setItems(res.data);
-    setLoading(false);
+    try {
+      await ensureAuthToken();
+      const res = await api.listParseReview();
+      setItems(res.data);
+    } catch (e) {
+      Alert.alert('Could not load', formatNetworkError(e));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useFocusEffect(
     useCallback(() => {
-      load();
+      void load().catch(() => {});
     }, []),
   );
 

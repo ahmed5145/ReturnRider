@@ -21,8 +21,17 @@ function getExpoProjectId(): string | undefined {
   );
 }
 
+/** Remote push is not available in Expo Go (SDK 53+). Use a dev build. */
+export function isExpoGo(): boolean {
+  return Constants.appOwnership === 'expo';
+}
+
 export async function registerForPushNotifications(): Promise<string | null> {
   if (Platform.OS === 'web') return null;
+
+  if (isExpoGo()) {
+    return null;
+  }
 
   const projectId = getExpoProjectId();
   if (!projectId) {
@@ -43,9 +52,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
       return null;
     }
 
-    const token = (
-      await Notifications.getExpoPushTokenAsync({ projectId })
-    ).data;
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     await api.registerPushToken(token);
     return token;
   } catch (err) {
