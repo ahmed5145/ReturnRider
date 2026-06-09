@@ -10,7 +10,10 @@ export type AnalyticsEvent =
   | 'refund_confirmed'
   | 'manual_return_added'
   | 'parse_misparsed_reported'
-  | 'merchant_portal_opened';
+  | 'merchant_portal_opened'
+  | 'dashboard_snooze'
+  | 'referral_applied'
+  | 'theme_changed';
 
 export function trackEvent(
   event: AnalyticsEvent,

@@ -14,6 +14,7 @@ import { Link, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../../lib/api-base';
 import { fetchApiHealth } from '../../lib/health';
 import { router } from 'expo-router';
+import { trackEvent } from '../../lib/analytics';
 import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
 import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
 import { openUrl } from '../../lib/open-url';
@@ -242,7 +243,10 @@ export default function SettingsScreen() {
       <View style={styles.themeRow}>
         <Pressable
           style={[styles.themeChip, mode === 'dark' && styles.themeChipActive]}
-          onPress={() => setMode('dark')}
+          onPress={() => {
+            setMode('dark');
+            trackEvent('theme_changed', { mode: 'dark' });
+          }}
         >
           <Text style={[styles.themeChipText, mode === 'dark' && styles.themeChipTextActive]}>
             Dark
@@ -250,7 +254,10 @@ export default function SettingsScreen() {
         </Pressable>
         <Pressable
           style={[styles.themeChip, mode === 'light' && styles.themeChipActive]}
-          onPress={() => setMode('light')}
+          onPress={() => {
+            setMode('light');
+            trackEvent('theme_changed', { mode: 'light' });
+          }}
         >
           <Text style={[styles.themeChipText, mode === 'light' && styles.themeChipTextActive]}>
             Light

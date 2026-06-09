@@ -90,7 +90,7 @@ What competitors (Parcel, Slice, generic email apps) don’t do well:
 | **UX-04** | **Swipe actions on return cards** ✅ | Dashboard | Swipe right → 24h snooze |
 | **UX-05** | **Bottom tab nav** | Global | Home · Add · Settings (discoverability) |
 | **UX-06** | **Dark/light theme toggle** ✅ | Settings | Dark/Light persisted in SecureStore |
-| **UX-07** | **Onboarding progress %** | Checklist | “80% protected — connect bank?” |
+| **UX-07** | **Onboarding progress %** ✅ | Checklist | 4 steps · “75% protected — connect bank?” |
 | **UX-08** | **Celebration confetti** | Refund confirm | Dopamine on “I got my refund” |
 | **UX-09** | **Merchant logos** | Cards | Amazon/Target icons via domain lookup |
 | **UX-10** | **Accessible font scaling** ✅ | Cards | `allowFontScaling` on dashboard list |
@@ -213,6 +213,7 @@ Phase 4 — Growth
 | 2026-06-09 | TRUST-02/03/04, MKT-05 | Data export, delete account, parser confidence, privacy table on landing |
 | 2026-06-09 | MKT-01/02/06/07, UX-02 | Referral program, campaign banner, refund share card, haptics, press kit |
 | 2026-06-04 | UX-04/06/10, Phase 4d docs | Swipe snooze, theme toggle, font scaling, OAuth/Plaid/ASO guides |
+| 2026-06-09 | UX-07, Plaid staging | Onboarding % protected, health flags, Render Plaid keys |
 | — | P3a-04 Android push | APK via EAS — emulator or friend's phone if no Android device |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |
 | 2026-06-09 | Migration 006 | Referral columns on Neon |

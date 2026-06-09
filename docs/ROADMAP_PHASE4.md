@@ -47,6 +47,8 @@
 | UX-06 | Theme toggle | ✅ Settings Dark/Light + `ThemeProvider` |
 | UX-10 | Accessible font scaling | ✅ `allowFontScaling` on list cards |
 | — | Deep link referral capture | ✅ `?ref=` via `pending-referral.ts` |
+| UX-07 | Onboarding progress % | ✅ 4-step checklist + “% protected” |
+| — | Plaid on Render | ✅ `features.plaid: true` on `/health` |
 
 ### Mobile
 

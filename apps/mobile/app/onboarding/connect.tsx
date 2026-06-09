@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -16,7 +16,8 @@ import {
   getGoogleRedirectUri,
   isExpoGo,
 } from '../../lib/google-redirect';
-import { colors } from '../../lib/theme';
+import { useTheme } from '../../lib/ThemeProvider';
+import type { ThemeColors } from '../../lib/themes';
 
 const REDIRECT_URI = getGoogleRedirectUri();
 const APP_RETURN_URI = isExpoGo() ? getAppReturnUri() : null;
@@ -40,6 +41,8 @@ const TRUST_POINTS = [
 ];
 
 export default function ConnectEmailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [loading, setLoading] = useState(false);
   const [sync180, setSync180] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -146,7 +149,8 @@ export default function ConnectEmailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   pad: { padding: 24, paddingBottom: 40 },
   title: { fontSize: 24, fontWeight: '700', color: colors.text },
@@ -225,3 +229,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
+}
