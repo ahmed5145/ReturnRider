@@ -1,5 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
+  Alert,
   FlatList,
   Modal,
   Pressable,
@@ -9,15 +10,17 @@ import {
   View,
 } from 'react-native';
 import { Link, router, useFocusEffect } from 'expo-router';
+import { ReturnListCard } from '../../components/ReturnListCard';
 import { DashboardSkeleton } from '../../components/DashboardSkeleton';
 import { trackEvent } from '../../lib/analytics';
 import { api, ensureAuthToken } from '../../lib/api';
 import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../../lib/celebration';
-import { getMerchantEmoji } from '../../lib/merchant-icons';
-import { registerForPushNotifications } from '../../lib/notifications';
-import { colors } from '../../lib/theme';
 import { getActiveCampaign } from '../../lib/campaigns';
-import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
+import { registerForPushNotifications } from '../../lib/notifications';
+import { tryApplyPendingReferral } from '../../lib/pending-referral';
+import { useTheme } from '../../lib/ThemeProvider';
+import type { ThemeColors } from '../../lib/themes';
+import { formatDaysRemaining } from '../../lib/urgency';
 
 type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
 
@@ -52,6 +55,8 @@ interface ReturnSummary {
 }
 
 export default function HomeScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [returns, setReturns] = useState<ReturnSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -62,6 +67,7 @@ export default function HomeScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
   const [showCelebration, setShowCelebration] = useState(false);
   const [stats, setStats] = useState<ReturnStats | null>(null);
+  const [snoozingId, setSnoozingId] = useState<string | null>(null);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -69,6 +75,7 @@ export default function HomeScreen() {
     setError(null);
     try {
       await ensureAuthToken();
+      await tryApplyPendingReferral();
       const me = await api.getMe();
       if (!me.onboarding_completed) {
         router.replace('/welcome');
@@ -106,6 +113,19 @@ export default function HomeScreen() {
       load();
     }, [statusFilter]),
   );
+
+  const quickSnooze = async (id: string) => {
+    setSnoozingId(id);
+    try {
+      await api.snoozeReturn(id, '24h');
+      trackEvent('dashboard_snooze');
+      await load(true);
+    } catch (e) {
+      Alert.alert('Cannot snooze', e instanceof Error ? e.message : 'Try again');
+    } finally {
+      setSnoozingId(null);
+    }
+  };
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -279,47 +299,21 @@ export default function HomeScreen() {
             </Link>
           </View>
         }
-        renderItem={({ item }) => {
-          const borderColor = getUrgencyColor(item.days_remaining);
-          const emoji = getMerchantEmoji(item.merchant_name);
-          return (
-            <Link href={`/returns/${item.id}`} asChild>
-              <Pressable style={[styles.card, { borderLeftColor: borderColor }]}>
-                <View style={styles.cardRow}>
-                  <Text style={styles.merchant}>
-                    {emoji ? `${emoji} ` : ''}
-                    {item.merchant_name}
-                  </Text>
-                  {item.has_wallet_pass && <Text style={styles.walletIcon}>📲</Text>}
-                </View>
-                <Text style={styles.item}>{item.item_summary}</Text>
-                <Text
-                  style={[
-                    styles.meta,
-                    {
-                      color: statusFilter === 'completed' ? colors.success : borderColor,
-                    },
-                  ]}
-                >
-                  {statusFilter === 'completed'
-                    ? item.refund_amount != null
-                      ? `Refunded $${item.refund_amount.toFixed(2)}`
-                      : 'Refund completed'
-                    : formatDaysRemaining(item.days_remaining)}
-                  {statusFilter !== 'completed' && item.expected_refund_amount != null
-                    ? ` · $${item.expected_refund_amount.toFixed(2)}`
-                    : ''}
-                </Text>
-              </Pressable>
-            </Link>
-          );
-        }}
+        renderItem={({ item }) => (
+          <ReturnListCard
+            item={item}
+            completed={statusFilter === 'completed'}
+            onSnooze={statusFilter === 'completed' ? undefined : quickSnooze}
+            snoozingId={snoozingId}
+          />
+        )}
       />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, padding: 20, paddingTop: 56, backgroundColor: colors.bg },
   title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 4 },
   campaignBanner: {
@@ -390,18 +384,6 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
   filterText: { color: colors.textMuted, fontSize: 13, fontWeight: '600' },
   filterTextActive: { color: colors.accent },
-  card: {
-    backgroundColor: colors.bgCard,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-  },
-  cardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  walletIcon: { fontSize: 16 },
-  merchant: { fontSize: 18, fontWeight: '600', color: colors.text, flex: 1 },
-  item: { fontSize: 14, color: colors.textMuted, marginTop: 4 },
-  meta: { fontSize: 12, color: colors.accent, marginTop: 8 },
   emptyBox: { padding: 20, alignItems: 'center' },
   emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '600', marginBottom: 8 },
   empty: { color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 16 },
@@ -446,3 +428,4 @@ const styles = StyleSheet.create({
   },
   modalBtnText: { color: '#fff', fontWeight: '700' },
 });
+}

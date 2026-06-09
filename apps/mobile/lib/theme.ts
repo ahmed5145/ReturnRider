@@ -1,15 +1,7 @@
-export const colors = {
-  bg: '#0f1419',
-  bgCard: '#1a2332',
-  bgElevated: '#243044',
-  accent: '#e94560',
-  accentSoft: 'rgba(233, 69, 96, 0.15)',
-  text: '#ffffff',
-  textMuted: '#9aa8bc',
-  textDim: '#6b7a8f',
-  success: '#3dd68c',
-  border: '#2d3a4f',
-};
+/** @deprecated Prefer useTheme() from ThemeProvider for dynamic light/dark. */
+import { darkTheme } from './themes';
+
+export const colors = darkTheme;
 
 export const spacing = {
   screen: 24,

@@ -87,19 +87,19 @@ What competitors (Parcel, Slice, generic email apps) don’t do well:
 | **UX-01** | **Skeleton loaders** | Dashboard | Perceived speed during sync |
 | **UX-02** | **Haptic on deadline urgency** | Detail | Tap feedback when &lt;3 days |
 | **UX-03** | **Empty state illustrations** | Dashboard | Custom art vs plain text |
-| **UX-04** | **Swipe actions on return cards** | Dashboard | Swipe to snooze / archive |
+| **UX-04** | **Swipe actions on return cards** ✅ | Dashboard | Swipe right → 24h snooze |
 | **UX-05** | **Bottom tab nav** | Global | Home · Add · Settings (discoverability) |
-| **UX-06** | **Dark/light theme toggle** | Settings | Accessibility |
+| **UX-06** | **Dark/light theme toggle** ✅ | Settings | Dark/Light persisted in SecureStore |
 | **UX-07** | **Onboarding progress %** | Checklist | “80% protected — connect bank?” |
 | **UX-08** | **Celebration confetti** | Refund confirm | Dopamine on “I got my refund” |
 | **UX-09** | **Merchant logos** | Cards | Amazon/Target icons via domain lookup |
-| **UX-10** | **Accessible font scaling** | Global | Respect system text size |
+| **UX-10** | **Accessible font scaling** ✅ | Cards | `allowFontScaling` on dashboard list |
 
 ### Tier 5 — Technical / trust / compliance
 
 | ID | Idea | Why |
 |----|------|-----|
-| **TRUST-01** | Google OAuth verification + limited scope audit | Required for production Gmail |
+| **TRUST-01** | Google OAuth verification + limited scope audit | 📋 [GOOGLE_OAUTH_VERIFICATION.md](./GOOGLE_OAUTH_VERIFICATION.md) |
 | **TRUST-02** | Data export (GDPR/CCPA) | Settings → Download my data |
 | **TRUST-03** | Account deletion flow | Settings → Delete account |
 | **TRUST-04** | Parser confidence explainability | “75% match because…” on review screen |
@@ -196,6 +196,8 @@ Phase 4 — Growth
 - [ROADMAP_PHASE2.md](./ROADMAP_PHASE2.md) — Locked Phase 2 (complete)  
 - [STAGING_DEPLOY.md](./STAGING_DEPLOY.md) — Render deploy  
 - [DEV_BUILD.md](./DEV_BUILD.md) — Expo dev client for push  
+- [ROADMAP_PHASE4.md](./ROADMAP_PHASE4.md) — Trust, growth, UX polish  
+- [PLAID_SETUP.md](./PLAID_SETUP.md) · [PLAY_STORE_ASO.md](./PLAY_STORE_ASO.md)  
 
 ---
 
@@ -210,5 +212,7 @@ Phase 4 — Growth
 | 2026-06-09 | P3a-04, UX-01/08/09, P3b-06 | Push test API, skeleton, celebration+share, smart snooze, merchant emoji |
 | 2026-06-09 | TRUST-02/03/04, MKT-05 | Data export, delete account, parser confidence, privacy table on landing |
 | 2026-06-09 | MKT-01/02/06/07, UX-02 | Referral program, campaign banner, refund share card, haptics, press kit |
+| 2026-06-04 | UX-04/06/10, Phase 4d docs | Swipe snooze, theme toggle, font scaling, OAuth/Plaid/ASO guides |
 | — | P3a-04 Android push | APK via EAS — emulator or friend's phone if no Android device |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |
+| — | Migration 006 | Run `006_referral.sql` on Neon if not applied |

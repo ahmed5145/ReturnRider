@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,7 +18,8 @@ import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
 import { openUrl } from '../../lib/open-url';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { registerForPushNotifications } from '../../lib/notifications';
-import { colors } from '../../lib/theme';
+import { useTheme } from '../../lib/ThemeProvider';
+import type { ThemeColors } from '../../lib/themes';
 
 interface LinkedEmail {
   id: string;
@@ -34,6 +35,8 @@ interface LinkedEmail {
 }
 
 export default function SettingsScreen() {
+  const { colors, mode, setMode } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [emails, setEmails] = useState<LinkedEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -228,6 +231,26 @@ export default function SettingsScreen() {
     <>
       <Text style={styles.title}>Settings</Text>
 
+      <Text style={styles.section}>Appearance</Text>
+      <View style={styles.themeRow}>
+        <Pressable
+          style={[styles.themeChip, mode === 'dark' && styles.themeChipActive]}
+          onPress={() => setMode('dark')}
+        >
+          <Text style={[styles.themeChipText, mode === 'dark' && styles.themeChipTextActive]}>
+            Dark
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.themeChip, mode === 'light' && styles.themeChipActive]}
+          onPress={() => setMode('light')}
+        >
+          <Text style={[styles.themeChipText, mode === 'light' && styles.themeChipTextActive]}>
+            Light
+          </Text>
+        </Pressable>
+      </View>
+
       <Text style={styles.section}>Invite</Text>
       <View style={styles.inviteCard}>
         <Text style={styles.inviteTitle}>Protect a friend&apos;s refund</Text>
@@ -410,7 +433,8 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 56, paddingBottom: 24 },
   privacyCard: {
@@ -464,6 +488,18 @@ const styles = StyleSheet.create({
   dangerLink: { color: '#ff6b6b', fontWeight: '600', fontSize: 14, marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 16 },
+  themeRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
+  themeChip: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+  },
+  themeChipActive: { backgroundColor: colors.accentSoft, borderColor: colors.accent },
+  themeChipText: { color: colors.textMuted, fontWeight: '600' },
+  themeChipTextActive: { color: colors.accent },
   section: { color: colors.text, fontWeight: '600', fontSize: 16, marginTop: 4 },
   hint: { color: colors.textMuted, fontSize: 13, marginBottom: 12, marginTop: 4, lineHeight: 18 },
   card: {
@@ -492,3 +528,4 @@ const styles = StyleSheet.create({
   },
   addBtnText: { color: colors.accent, fontWeight: '600' },
 });
+}

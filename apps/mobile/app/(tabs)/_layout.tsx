@@ -1,13 +1,20 @@
 import { Tabs, router } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
-import { colors } from '../../lib/theme';
+import { useTheme } from '../../lib/ThemeProvider';
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          backgroundColor: colors.bgCard,
+          borderTopColor: colors.border,
+          height: 60,
+          paddingBottom: 8,
+        },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textDim,
         tabBarLabelStyle: styles.tabLabel,
@@ -45,12 +52,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: colors.bgCard,
-    borderTopColor: colors.border,
-    height: 60,
-    paddingBottom: 8,
-  },
   tabLabel: { fontSize: 11, fontWeight: '600' },
   icon: { fontSize: 20 },
 });
