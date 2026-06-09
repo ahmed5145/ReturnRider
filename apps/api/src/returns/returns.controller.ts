@@ -76,3 +76,4 @@ export class ReturnsController {
   ) {
     return this.returnsService.deleteReturn(user.id, id);
   }
+}
