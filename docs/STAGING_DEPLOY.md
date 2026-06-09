@@ -27,6 +27,24 @@ Host the NestJS API on Render (or similar) so the mobile app works without your 
 
 4. Deploy. Note the URL, e.g. `https://returnrider-api.onrender.com`.
 
+### If deploy still uses an old build command
+
+Render Blueprints **do not always auto-update** build settings on an existing service. After pushing an updated `render.yaml`, either:
+
+**Option A — Sync Blueprint:** Render Dashboard → **Blueprints** → `returnrider-api` → **Manual sync** (or re-sync from repo).
+
+**Option B — Edit the web service directly:** `returnrider-api` → **Settings** → **Build & Deploy**:
+
+| Field | Value |
+|-------|--------|
+| Root Directory | `.` (repo root) |
+| Build Command | `NPM_CONFIG_PRODUCTION=false npm ci && npm run build -w @returnrider/api` |
+| Start Command | `npm run start -w @returnrider/api` |
+
+Add env var `NODE_VERSION` = `20` if the service still picks Node 24.
+
+The API `build` script also uses `npx` to fetch Nest/TypeScript when devDependencies are omitted (production `npm install`).
+
 ## Option B — Manual Render Web Service
 
 - **Root directory:** `apps/api`
