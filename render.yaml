@@ -6,11 +6,13 @@ services:
     runtime: node
     region: ohio
     plan: free
-    rootDir: apps/api
-    buildCommand: npm install && npx prisma generate && npm run build
-    startCommand: npm run start
+    rootDir: .
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && npm run build -w @returnrider/api
+    startCommand: npm run start -w @returnrider/api
     healthCheckPath: /health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL

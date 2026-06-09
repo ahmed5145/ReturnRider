@@ -78,7 +78,8 @@ Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_E
 
 | Issue | Fix |
 |-------|-----|
-| Build fails on Prisma | Ensure `DATABASE_URL` set; `npx prisma generate` in build |
+| `nest: not found` on Render | `NODE_ENV=production` skips devDeps — use `NPM_CONFIG_PRODUCTION=false` in build (see `render.yaml`) |
+| Build fails on Prisma | Ensure `DATABASE_URL` set; `postinstall` runs `prisma generate` |
 | 502 on wake | Free tier cold start — wait 30–60s |
 | Gmail token exchange fails | `GOOGLE_CLIENT_ID` / `SECRET` match mobile client |
 | Sync not running | Check `REDIS_URL`; Upstash must allow BullMQ connections |
