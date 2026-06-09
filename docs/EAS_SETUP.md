@@ -76,3 +76,17 @@ npm run start:dev-client
 ## Queue times
 
 Free tier often waits **15–60+ minutes** on "Build queued…". Ctrl+C is fine — check the dashboard for status.
+
+**Limits:** 15 Android + 15 iOS builds per calendar month, 1 concurrent build, low-priority queue. See [CI_CD.md](./CI_CD.md).
+
+---
+
+## CI/CD (GitHub Actions)
+
+After the repo is on GitHub:
+
+1. Add secret **`EXPO_TOKEN`** (expo.dev → Access tokens).
+2. **Actions → EAS Build → Run workflow** queues the same builds as local `eas build` (non-blocking).
+3. PRs run API build + mobile typecheck via `ci.yml`.
+
+Full plan: [CI_CD.md](./CI_CD.md).
