@@ -13,7 +13,12 @@ export class PushService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async sendToUser(userId: string, title: string, body: string, data?: Record<string, string>) {
+  async sendToUser(
+    userId: string,
+    title: string,
+    body: string,
+    data?: Record<string, string | number | boolean>,
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user?.expoPushToken || !isExpoPushToken(user.expoPushToken)) {
       this.logger.warn(`No valid Expo push token for user ${userId}`);

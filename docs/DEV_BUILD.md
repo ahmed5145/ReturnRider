@@ -77,6 +77,12 @@ npm run start:dev-client
 
 Gmail connect, settings, and returns all work in Expo Go. Push notifications need a dev build.
 
+### Test push after installing dev build
+
+1. Open app → **Settings** → **Enable notifications**
+2. Tap **Send test push** (calls `POST /api/v1/users/test-push`)
+3. Tap a real deadline reminder notification → opens that return’s detail screen
+
 ---
 
 ## Encryption export (iOS builds)

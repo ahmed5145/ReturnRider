@@ -18,7 +18,9 @@
 
 ---
 
-## Phase 3a — Polish & ship beta (in progress)
+## Phase 3a — Polish & ship beta ✅ COMPLETE
+
+> Push delivery requires Android dev build install (free). Code + test endpoint ready.
 
 | ID | Item | Status |
 |----|------|--------|
@@ -28,9 +30,11 @@
 | P3a-05 | Marketing landing page (`apps/web`) | ✅ Done |
 | P3a-06 | Merchant return portal deep links | ✅ Done |
 | P3a-07 | Report misparsed / teach parser | ✅ Done |
-| P3a-04 | Push (Android dev build) | ⏸ Next |
-| UX-01 | Skeleton loaders | ⏸ Planned |
-| UX-08 | Refund celebration polish | ⏸ Planned |
+| P3a-04 | Push (Android dev build) | ✅ Infra ready — build APK to test |
+| UX-01 | Skeleton loaders | ✅ Done |
+| UX-08 | Refund celebration + share | ✅ Done |
+| P3b-06 | Smart snooze suggestions | ✅ Done |
+| UX-09 | Merchant emoji on cards | ✅ Done |
 
 ### API additions (3a)
 
@@ -39,6 +43,8 @@
 - `POST /returns/:id/report-misparsed` — user feedback (`parse_feedback` table)
 - `DELETE /returns/:id` — remove draft/completed
 - `GET /` — marketing landing (from `apps/web/public`)
+- `POST /users/test-push` — verify push on dev build
+- `POST /returns/:id/snooze` — optional `{ mode: "24h" | "weekend" }`
 
 ### Migration
 
@@ -93,3 +99,4 @@ cd apps/web && npm start
 |------|------|
 | 2026-06-09 | Phase 3a core: stats, archive, trust screen, landing, merchant links, parser feedback |
 | 2026-06-09 | Smoke fixes: snooze, manual returns, nav, delete return |
+| 2026-06-09 | Push test API, deep links, skeleton, celebration, smart snooze, settings notifications |

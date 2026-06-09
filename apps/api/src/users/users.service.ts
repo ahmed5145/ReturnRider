@@ -54,6 +54,7 @@ export class UsersService {
       review_pending_count: reviewPendingCount,
       inbox_syncing: anySyncing,
       has_push_token: !!user.expoPushToken,
+      has_plaid_linked: !!user.plaidAccessTokenEnc,
     };
   }
 

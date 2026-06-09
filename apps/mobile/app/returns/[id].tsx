@@ -11,8 +11,10 @@ import {
   View,
 } from 'react-native';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { RefundCelebration } from '../../components/RefundCelebration';
 import { trackEvent } from '../../lib/analytics';
 import { api } from '../../lib/api';
+import { getSnoozeSuggestion, type SnoozeMode } from '../../lib/snooze';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
 import { colors } from '../../lib/theme';
 
@@ -24,6 +26,8 @@ export default function ReturnDetailScreen() {
   const [acting, setActing] = useState(false);
   const [refundAmount, setRefundAmount] = useState('');
   const [walletHintShown, setWalletHintShown] = useState(false);
+  const [showRefundCelebration, setShowRefundCelebration] = useState(false);
+  const [celebrationAmount, setCelebrationAmount] = useState(0);
 
   const load = async () => {
     if (!id) return;
@@ -68,13 +72,18 @@ export default function ReturnDetailScreen() {
     );
   };
 
-  const snooze = async () => {
+  const snooze = async (mode: SnoozeMode = '24h') => {
     if (!id || !data) return;
     setActing(true);
     try {
-      await api.snoozeReturn(id);
+      await api.snoozeReturn(id, mode);
       await load();
-      Alert.alert('Snoozed', 'Deadline extended 24 hours. Reminders rescheduled.');
+      Alert.alert(
+        'Snoozed',
+        mode === 'weekend'
+          ? 'Deadline moved to this weekend. Reminders rescheduled.'
+          : 'Deadline extended 24 hours. Reminders rescheduled.',
+      );
     } catch (e) {
       Alert.alert('Cannot snooze', e instanceof Error ? e.message : 'Try again');
     } finally {
@@ -161,10 +170,8 @@ export default function ReturnDetailScreen() {
     try {
       await api.confirmRefund(id, amount);
       trackEvent('refund_confirmed', { amount });
-      Alert.alert('Refund recorded', 'Nice — we marked this return complete.', [
-        { text: 'Back to dashboard', onPress: () => router.replace('/') },
-        { text: 'Stay here' },
-      ]);
+      setCelebrationAmount(amount);
+      setShowRefundCelebration(true);
       await load();
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Try again');
@@ -193,6 +200,7 @@ export default function ReturnDetailScreen() {
 
   const urgencyColor = getUrgencyColor(data.days_remaining);
   const isComplete = data.status === 'refund_completed';
+  const snoozeSuggestion = getSnoozeSuggestion(data.days_remaining);
   const canRemove =
     data.status === 'draft' ||
     data.status === 'refund_completed' ||
@@ -201,6 +209,15 @@ export default function ReturnDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <RefundCelebration
+        visible={showRefundCelebration}
+        amount={celebrationAmount}
+        merchant={data.merchant_name}
+        onClose={() => {
+          setShowRefundCelebration(false);
+          router.replace('/');
+        }}
+      />
       <Stack.Screen options={{ title: data.merchant_name }} />
       <ScrollView
         style={styles.scroll}
@@ -267,11 +284,27 @@ export default function ReturnDetailScreen() {
 
           <Text style={styles.section}>Actions</Text>
           {data.snoozes_remaining > 0 && (
-            <Pressable style={styles.secondaryBtn} onPress={snooze} disabled={acting}>
-              <Text style={styles.secondaryBtnText}>
-                Snooze 24h ({data.snoozes_remaining} left)
-              </Text>
-            </Pressable>
+            <>
+              {snoozeSuggestion && (
+                <Pressable
+                  style={styles.smartSnoozeBtn}
+                  onPress={() => snooze(snoozeSuggestion.mode)}
+                  disabled={acting}
+                >
+                  <Text style={styles.smartSnoozeText}>{snoozeSuggestion.label}</Text>
+                  <Text style={styles.smartSnoozeHint}>Suggested for your deadline</Text>
+                </Pressable>
+              )}
+              <Pressable
+                style={styles.secondaryBtn}
+                onPress={() => snooze('24h')}
+                disabled={acting}
+              >
+                <Text style={styles.secondaryBtnText}>
+                  Snooze 24h ({data.snoozes_remaining} left)
+                </Text>
+              </Pressable>
+            </>
           )}
 
           <Text style={styles.label}>Refund received ($)</Text>
@@ -375,6 +408,17 @@ const styles = StyleSheet.create({
   },
   btnGoogle: { borderColor: '#4285F4' },
   btnText: { color: colors.text, fontWeight: '600' },
+  smartSnoozeBtn: {
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  smartSnoozeText: { color: colors.accent, fontWeight: '700', fontSize: 15 },
+  smartSnoozeHint: { color: colors.textDim, fontSize: 11, marginTop: 4 },
   secondaryBtn: {
     padding: 14,
     borderRadius: 12,

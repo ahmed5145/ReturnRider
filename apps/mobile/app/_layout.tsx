@@ -1,7 +1,24 @@
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as Notifications from 'expo-notifications';
+import { router } from 'expo-router';
+import { Platform } from 'react-native';
 
 export default function RootLayout() {
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as { returnId?: string };
+      if (data?.returnId) {
+        router.push(`/returns/${data.returnId}`);
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
   return (
     <>
       <StatusBar style="light" />

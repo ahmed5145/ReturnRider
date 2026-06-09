@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ReturnStatus } from '@prisma/client';
 import { getMerchantReturnUrl } from '../common/merchant-portals';
+import { computeSnoozeDeadline } from '../common/snooze-utils';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseReceiptFromOcrText } from '../parsers/receipt-text.parser';
@@ -388,14 +389,16 @@ export class ReturnsService {
     );
   }
 
-  async snooze(userId: string, returnId: string) {
+  async snooze(
+    userId: string,
+    returnId: string,
+    mode: '24h' | 'weekend' = '24h',
+  ) {
     const ret = await this.loadReturn(userId, returnId);
     if (ret.snoozeCount >= 2) {
       throw new BadRequestException('Maximum snoozes reached');
     }
-    const newDeadline = ret.returnDeadlineAt
-      ? new Date(ret.returnDeadlineAt.getTime() + 24 * 60 * 60 * 1000)
-      : new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const newDeadline = computeSnoozeDeadline(ret.returnDeadlineAt, mode);
 
     const updated = await this.prisma.return.update({
       where: { id: returnId },

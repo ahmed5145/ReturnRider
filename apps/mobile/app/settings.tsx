@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Linking,
   Pressable,
@@ -11,6 +12,7 @@ import {
 import { Link, router, Stack, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../lib/api-base';
 import { api, ensureAuthToken } from '../lib/api';
+import { registerForPushNotifications } from '../lib/notifications';
 import { colors } from '../lib/theme';
 
 interface LinkedEmail {
@@ -30,11 +32,16 @@ export default function SettingsScreen() {
   const [emails, setEmails] = useState<LinkedEmail[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [hasPush, setHasPush] = useState(false);
+  const [hasPlaid, setHasPlaid] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   const load = async () => {
     await ensureAuthToken();
-    const res = await api.listEmails();
+    const [res, me] = await Promise.all([api.listEmails(), api.getMe()]);
     setEmails(res.data);
+    setHasPush(me.has_push_token);
+    setHasPlaid(me.has_plaid_linked);
     setLoading(false);
   };
 
@@ -57,6 +64,35 @@ export default function SettingsScreen() {
   const disconnect = async (id: string) => {
     await api.disconnectEmail(id);
     load();
+  };
+
+  const enablePush = async () => {
+    setPushLoading(true);
+    const token = await registerForPushNotifications();
+    setHasPush(!!token);
+    setPushLoading(false);
+    if (!token) {
+      Alert.alert(
+        'Notifications need dev build',
+        'Expo Go cannot receive push on SDK 53+. Build an Android dev client (free) — see docs/DEV_BUILD.md.',
+      );
+    }
+  };
+
+  const sendTestPush = async () => {
+    setPushLoading(true);
+    try {
+      const res = await api.testPush();
+      if (res.sent) {
+        Alert.alert('Sent', 'Check your notification tray.');
+      } else {
+        Alert.alert('Not sent', res.reason ?? 'Enable notifications first.');
+      }
+    } catch (e) {
+      Alert.alert('Failed', e instanceof Error ? e.message : 'Try again');
+    } finally {
+      setPushLoading(false);
+    }
   };
 
   const formatLastSync = (iso: string | null | undefined) => {
@@ -92,6 +128,57 @@ export default function SettingsScreen() {
           <Text style={styles.legalLink}>Terms of Service →</Text>
         </Pressable>
       </View>
+      <Text style={styles.section}>Notifications</Text>
+      <View style={styles.notifCard}>
+        <Text style={styles.notifStatus}>
+          {hasPush ? '✓ Push reminders enabled' : 'Push reminders off'}
+        </Text>
+        <Text style={styles.hint}>
+          T-7, T-3, and T-24h alerts before deadlines. Requires Android dev build (not Expo Go).
+        </Text>
+        <View style={styles.row}>
+          {!hasPush && (
+            <Pressable onPress={enablePush} disabled={pushLoading}>
+              <Text style={styles.syncLink}>
+                {pushLoading ? 'Enabling…' : 'Enable notifications'}
+              </Text>
+            </Pressable>
+          )}
+          {hasPush && (
+            <Pressable onPress={sendTestPush} disabled={pushLoading}>
+              <Text style={styles.syncLink}>Send test push</Text>
+            </Pressable>
+          )}
+        </View>
+      </View>
+
+      <Text style={styles.section}>Refund radar (optional)</Text>
+      <View style={styles.notifCard}>
+        <Text style={styles.notifStatus}>
+          {hasPlaid ? '✓ Bank linked for auto-refund detection' : 'Not connected'}
+        </Text>
+        <Text style={styles.hint}>
+          Plaid auto-matches refunds to returns. Native bank link ships with dev build + Plaid keys.
+        </Text>
+        {hasPlaid && (
+          <Pressable
+            onPress={async () => {
+              try {
+                const res = await api.plaidSync();
+                Alert.alert(
+                  'Sync complete',
+                  `Scanned ${res.synced} transactions · ${res.matches?.length ?? 0} refund matches.`,
+                );
+              } catch (e) {
+                Alert.alert('Sync failed', e instanceof Error ? e.message : 'Try again');
+              }
+            }}
+          >
+            <Text style={styles.syncLink}>Sync refunds now</Text>
+          </Pressable>
+        )}
+      </View>
+
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
         Read-only shopping mail. Disconnect anytime — we never sell your data.
@@ -169,6 +256,16 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   privacyItem: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
+  notifCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  notifStatus: { color: colors.text, fontWeight: '600', fontSize: 14 },
   legalLink: { color: colors.accent, fontWeight: '600', fontSize: 14, marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 24 },

@@ -207,5 +207,6 @@ Phase 4 — Growth
 |------|------|-------|
 | 2026-06-09 | Smoke fixes | Snooze upsert, manual→ready_to_ship, delete return, nav labels |
 | 2026-06-09 | P3a-01–07 | Stats hero, completed tab, trust screen, landing page, merchant links, parser feedback |
-| — | P3a-04 Android push | Deferred until dev build |
+| 2026-06-09 | P3a-04, UX-01/08/09, P3b-06 | Push test API, skeleton, celebration+share, smart snooze, merchant emoji |
+| — | P3a-04 Android push | Build APK via EAS to receive real pushes |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |

@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { User } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { SnoozeDto } from './dto/snooze.dto';
 import { ReturnsService } from './returns.service';
 
 class ReportMisparsedBody {
@@ -84,8 +85,9 @@ export class ReturnsController {
   async snooze(
     @CurrentUser() user: User,
     @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: SnoozeDto,
   ) {
-    return this.returnsService.snooze(user.id, id);
+    return this.returnsService.snooze(user.id, id, body.mode ?? '24h');
   }
 
   @Post(':id/report-misparsed')

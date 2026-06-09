@@ -71,7 +71,11 @@ export const api = {
       review_pending_count: number;
       inbox_syncing: boolean;
       has_push_token: boolean;
+      has_plaid_linked: boolean;
     }>('/users/me'),
+
+  testPush: () =>
+    request<{ sent: boolean; reason?: string }>('/users/test-push', { method: 'POST', body: '{}' }),
 
   completeOnboarding: () =>
     request('/users/onboarding-complete', { method: 'POST', body: '{}' }),
@@ -149,8 +153,11 @@ export const api = {
       body: JSON.stringify({ reason }),
     }),
 
-  snoozeReturn: (id: string) =>
-    request(`/returns/${id}/snooze`, { method: 'POST' }),
+  snoozeReturn: (id: string, mode?: '24h' | 'weekend') =>
+    request(`/returns/${id}/snooze`, {
+      method: 'POST',
+      body: JSON.stringify(mode ? { mode } : {}),
+    }),
 
   deleteReturn: (id: string) =>
     request<{ deleted: boolean }>(`/returns/${id}`, { method: 'DELETE' }),
@@ -266,4 +273,10 @@ export const api = {
     }),
 
   plaidLinkToken: () => request<{ link_token: string }>('/plaid/link-token', { method: 'POST' }),
+
+  plaidSync: () =>
+    request<{ synced: number; matches: unknown[] }>('/plaid/sync', {
+      method: 'POST',
+      body: '{}',
+    }),
 };

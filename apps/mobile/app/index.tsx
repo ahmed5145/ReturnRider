@@ -15,6 +15,8 @@ import { api, ensureAuthToken } from '../lib/api';
 import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../lib/celebration';
 import { registerForPushNotifications } from '../lib/notifications';
 import { colors } from '../lib/theme';
+import { DashboardSkeleton } from '../components/DashboardSkeleton';
+import { getMerchantEmoji } from '../lib/merchant-icons';
 import { formatDaysRemaining, getUrgencyColor } from '../lib/urgency';
 
 type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
@@ -104,11 +106,7 @@ export default function HomeScreen() {
   );
 
   if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
+    return <DashboardSkeleton />;
   }
 
   const nextDeadline =
@@ -281,11 +279,15 @@ export default function HomeScreen() {
         }
         renderItem={({ item }) => {
           const borderColor = getUrgencyColor(item.days_remaining);
+          const emoji = getMerchantEmoji(item.merchant_name);
           return (
             <Link href={`/returns/${item.id}`} asChild>
               <Pressable style={[styles.card, { borderLeftColor: borderColor }]}>
                 <View style={styles.cardRow}>
-                  <Text style={styles.merchant}>{item.merchant_name}</Text>
+                  <Text style={styles.merchant}>
+                    {emoji ? `${emoji} ` : ''}
+                    {item.merchant_name}
+                  </Text>
                   {item.has_wallet_pass && <Text style={styles.walletIcon}>📲</Text>}
                 </View>
                 <Text style={styles.item}>{item.item_summary}</Text>

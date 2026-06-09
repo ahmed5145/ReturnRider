@@ -4,6 +4,7 @@ import { IsOptional, IsString } from 'class-validator';
 import { User } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { PushService } from '../notifications/push.service';
 import { UsersService } from './users.service';
 
 class PushTokenDto {
@@ -22,7 +23,10 @@ class OnboardingDto {
 @UseGuards(AuthGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly pushService: PushService,
+  ) {}
 
   @Get('me')
   async me(@CurrentUser() user: User) {
@@ -33,6 +37,16 @@ export class UsersController {
   async pushToken(@CurrentUser() user: User, @Body() dto: PushTokenDto) {
     await this.usersService.setPushToken(user.id, dto.expo_push_token);
     return { registered: true };
+  }
+
+  @Post('test-push')
+  async testPush(@CurrentUser() user: User) {
+    return this.pushService.sendToUser(
+      user.id,
+      'ReturnRider',
+      'Push works! We\'ll remind you before return deadlines.',
+      { type: 'test' },
+    );
   }
 
   @Post('onboarding-complete')
