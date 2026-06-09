@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ReturnStatus } from '@prisma/client';
+import { getMerchantReturnUrl } from '../common/merchant-portals';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { parseReceiptFromOcrText } from '../parsers/receipt-text.parser';
@@ -167,6 +168,89 @@ export class ReturnsService {
     });
   }
 
+  async getStats(userId: string) {
+    const now = new Date();
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    const activeStatuses: ReturnStatus[] = [
+      'ready_to_ship',
+      'in_transit',
+      'delivered_to_merchant',
+      'awaiting_refund',
+    ];
+
+    const [activeReturns, completedCount, refunds] = await Promise.all([
+      this.prisma.return.findMany({
+        where: { userId, status: { in: activeStatuses } },
+        select: { expectedRefundAmount: true },
+      }),
+      this.prisma.return.count({
+        where: { userId, status: 'refund_completed' },
+      }),
+      this.prisma.refundStatus.findMany({
+        where: {
+          userId,
+          status: 'completed',
+          userConfirmedAt: { not: null },
+        },
+        select: { actualAmount: true, userConfirmedAt: true },
+      }),
+    ]);
+
+    const atRiskAmount = activeReturns.reduce(
+      (sum, r) => sum + (r.expectedRefundAmount ? Number(r.expectedRefundAmount) : 0),
+      0,
+    );
+
+    const refundedAllTime = refunds.reduce(
+      (sum, r) => sum + (r.actualAmount ? Number(r.actualAmount) : 0),
+      0,
+    );
+
+    const refundedYtd = refunds
+      .filter((r) => r.userConfirmedAt && r.userConfirmedAt >= yearStart)
+      .reduce((sum, r) => sum + (r.actualAmount ? Number(r.actualAmount) : 0), 0);
+
+    return {
+      at_risk_amount: Math.round(atRiskAmount * 100) / 100,
+      active_count: activeReturns.length,
+      refunded_ytd: Math.round(refundedYtd * 100) / 100,
+      refunded_all_time: Math.round(refundedAllTime * 100) / 100,
+      completed_count: completedCount,
+    };
+  }
+
+  async listCompleted(userId: string, limit = 50) {
+    const returns = await this.prisma.return.findMany({
+      where: { userId, status: 'refund_completed' },
+      include: { order: true, refundStatus: true },
+      orderBy: { updatedAt: 'desc' },
+      take: limit,
+    });
+
+    const data = returns.map((r) => ({
+      id: r.id,
+      merchant_name: r.order.merchantName,
+      item_summary: r.itemSummary,
+      status: r.status,
+      return_deadline_at: r.returnDeadlineAt?.toISOString() ?? null,
+      days_remaining: null,
+      has_wallet_pass: !!(r.walletAppleSerial || r.walletGoogleObjectId),
+      expected_refund_amount: r.expectedRefundAmount
+        ? Number(r.expectedRefundAmount)
+        : null,
+      refund_amount: r.refundStatus?.actualAmount
+        ? Number(r.refundStatus.actualAmount)
+        : null,
+      refunded_at: r.refundStatus?.userConfirmedAt?.toISOString() ?? null,
+      tracking_number: r.trackingNumber,
+    }));
+
+    return {
+      data,
+      meta: { total: data.length, as_of: new Date().toISOString() },
+    };
+  }
+
   async listActive(userId: string, daysAhead = 30, statusFilter?: string) {
     const now = new Date();
     const until = new Date(now);
@@ -274,6 +358,7 @@ export class ReturnsService {
             user_confirmed_at: ret.refundStatus.userConfirmedAt?.toISOString() ?? null,
           }
         : null,
+      merchant_return_url: getMerchantReturnUrl(ret.order.merchantName),
     };
   }
 
@@ -375,5 +460,34 @@ export class ReturnsService {
     await this.notificationScheduler.cancelForReturn(returnId);
     await this.prisma.return.delete({ where: { id: returnId } });
     return { deleted: true };
+  }
+
+  async reportMisparsed(
+    userId: string,
+    returnId: string,
+    reason: 'not_a_return' | 'wrong_deadline' | 'wrong_merchant',
+  ) {
+    const ret = await this.loadReturn(userId, returnId);
+
+    await this.prisma.parseFeedback.create({
+      data: {
+        userId,
+        returnId,
+        merchantName: ret.order.merchantName,
+        reason,
+      },
+    });
+
+    const removable: ReturnStatus[] = [
+      ReturnStatus.draft,
+      ReturnStatus.ready_to_ship,
+    ];
+    if (reason === 'not_a_return' && removable.includes(ret.status)) {
+      await this.notificationScheduler.cancelForReturn(returnId);
+      await this.prisma.return.delete({ where: { id: returnId } });
+      return { reported: true, removed: true };
+    }
+
+    return { reported: true, removed: false };
   }
 }

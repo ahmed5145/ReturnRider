@@ -11,7 +11,8 @@ Automated Return & Refund Tracker — mobile-first B2C app.
 | `services/email-worker` | Go email sync & parsing worker |
 | `db/migrations` | PostgreSQL schema |
 | `infra/terraform` | Staging infrastructure |
-| `docs/` | Blueprint & OpenAPI |
+| `apps/web` | Marketing landing page (static) |
+| `docs/` | Blueprint, Phase 3 roadmap & OpenAPI |
 | `legal/` | Terms of Service & Privacy Policy |
 
 ## Quick start

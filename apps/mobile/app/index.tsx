@@ -17,13 +17,22 @@ import { registerForPushNotifications } from '../lib/notifications';
 import { colors } from '../lib/theme';
 import { formatDaysRemaining, getUrgencyColor } from '../lib/urgency';
 
-type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund';
+type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
 
 const FILTERS: { id: StatusFilter; label: string }[] = [
   { id: 'all_active', label: 'All' },
   { id: 'ready_to_ship', label: 'Ship soon' },
   { id: 'awaiting_refund', label: 'Awaiting refund' },
+  { id: 'completed', label: 'Completed' },
 ];
+
+interface ReturnStats {
+  at_risk_amount: number;
+  active_count: number;
+  refunded_ytd: number;
+  refunded_all_time: number;
+  completed_count: number;
+}
 
 interface ReturnSummary {
   id: string;
@@ -34,6 +43,8 @@ interface ReturnSummary {
   days_remaining: number | null;
   has_wallet_pass: boolean;
   expected_refund_amount: number | null;
+  refund_amount?: number | null;
+  refunded_at?: string | null;
 }
 
 export default function HomeScreen() {
@@ -46,6 +57,7 @@ export default function HomeScreen() {
   const [linkedCount, setLinkedCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
   const [showCelebration, setShowCelebration] = useState(false);
+  const [stats, setStats] = useState<ReturnStats | null>(null);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -62,12 +74,18 @@ export default function HomeScreen() {
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
       await registerForPushNotifications();
-      const res = await api.getActiveReturns(
-        statusFilter === 'all_active' ? undefined : statusFilter,
-      );
-      setReturns(res.data);
-      if (res.data.length > 0 && !(await hasCelebratedFirstReturn())) {
-        trackEvent('first_return_visible', { count: res.data.length });
+      const [statsRes, returnsRes] = await Promise.all([
+        api.getReturnStats(),
+        statusFilter === 'completed'
+          ? api.getCompletedReturns()
+          : api.getActiveReturns(
+              statusFilter === 'all_active' ? undefined : statusFilter,
+            ),
+      ]);
+      setStats(statsRes);
+      setReturns(returnsRes.data);
+      if (returnsRes.data.length > 0 && !(await hasCelebratedFirstReturn())) {
+        trackEvent('first_return_visible', { count: returnsRes.data.length });
         await markFirstReturnCelebrated();
         setShowCelebration(true);
       }
@@ -93,11 +111,12 @@ export default function HomeScreen() {
     );
   }
 
-  const refundTotal = returns.reduce((sum, r) => sum + (r.expected_refund_amount ?? 0), 0);
-
-  const nextDeadline = returns
-    .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
-    .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
+  const nextDeadline =
+    statusFilter === 'completed'
+      ? undefined
+      : returns
+          .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
+          .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
 
   return (
     <View style={styles.container}>
@@ -141,7 +160,33 @@ export default function HomeScreen() {
         </Link>
       )}
 
-      {reviewPending > 0 && (
+      {stats && statusFilter !== 'completed' && (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroLabel}>Money protected</Text>
+          <View style={styles.heroRow}>
+            <View style={styles.heroStat}>
+              <Text style={styles.heroAmount}>
+                ${stats.at_risk_amount.toFixed(0)}
+              </Text>
+              <Text style={styles.heroSub}>at risk</Text>
+            </View>
+            <View style={styles.heroDivider} />
+            <View style={styles.heroStat}>
+              <Text style={[styles.heroAmount, { color: colors.success }]}>
+                ${stats.refunded_ytd.toFixed(0)}
+              </Text>
+              <Text style={styles.heroSub}>refunded YTD</Text>
+            </View>
+          </View>
+          {stats.completed_count > 0 && (
+            <Text style={styles.heroFoot}>
+              {stats.completed_count} completed · ${stats.refunded_all_time.toFixed(0)} all time
+            </Text>
+          )}
+        </View>
+      )}
+
+      {reviewPending > 0 && statusFilter !== 'completed' && (
         <Link href="/parse-review" asChild>
           <Pressable style={styles.reviewBanner}>
             <Text style={styles.reviewBannerTitle}>
@@ -155,9 +200,11 @@ export default function HomeScreen() {
       )}
 
       <Text style={styles.subtitle}>
-        {refundTotal > 0
-          ? `$${refundTotal.toFixed(0)} in refunds to protect`
-          : 'Active returns & deadlines'}
+        {statusFilter === 'completed'
+          ? 'Refund history'
+          : stats && stats.at_risk_amount > 0
+            ? `${stats.active_count} active return${stats.active_count === 1 ? '' : 's'}`
+            : 'Active returns & deadlines'}
       </Text>
 
       <View style={styles.filters}>
@@ -189,7 +236,14 @@ export default function HomeScreen() {
         }
         ListEmptyComponent={
           <View style={styles.emptyBox}>
-            {inboxSyncing ? (
+            {statusFilter === 'completed' ? (
+              <>
+                <Text style={styles.emptyTitle}>No completed returns yet</Text>
+                <Text style={styles.empty}>
+                  When you confirm a refund, it&apos;ll show up here as proof you got paid.
+                </Text>
+              </>
+            ) : inboxSyncing ? (
               <>
                 <Text style={styles.emptyTitle}>Scanning your inboxes</Text>
                 <Text style={styles.empty}>
@@ -235,9 +289,21 @@ export default function HomeScreen() {
                   {item.has_wallet_pass && <Text style={styles.walletIcon}>📲</Text>}
                 </View>
                 <Text style={styles.item}>{item.item_summary}</Text>
-                <Text style={[styles.meta, { color: borderColor }]}>
-                  {formatDaysRemaining(item.days_remaining)}
-                  {item.expected_refund_amount != null
+                <Text
+                  style={[
+                    styles.meta,
+                    {
+                      color:
+                        statusFilter === 'completed' ? colors.success : borderColor,
+                    },
+                  ]}
+                >
+                  {statusFilter === 'completed'
+                    ? item.refund_amount != null
+                      ? `Refunded $${item.refund_amount.toFixed(2)}`
+                      : 'Refund completed'
+                    : formatDaysRemaining(item.days_remaining)}
+                  {statusFilter !== 'completed' && item.expected_refund_amount != null
                     ? ` · $${item.expected_refund_amount.toFixed(2)}`
                     : ''}
                 </Text>
@@ -274,6 +340,33 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   syncChipText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
+  heroCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 16,
+    padding: 18,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  heroLabel: {
+    color: colors.textDim,
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'center' },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroAmount: { fontSize: 28, fontWeight: '800', color: colors.text },
+  heroSub: { color: colors.textMuted, fontSize: 12, marginTop: 4 },
+  heroDivider: { width: 1, height: 40, backgroundColor: colors.border },
+  heroFoot: {
+    color: colors.textDim,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 14,
+  },
   reviewBanner: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,

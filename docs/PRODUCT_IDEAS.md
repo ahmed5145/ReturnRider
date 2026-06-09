@@ -206,4 +206,6 @@ Phase 4 — Growth
 | Date | Item | Notes |
 |------|------|-------|
 | 2026-06-09 | Smoke fixes | Snooze upsert, manual→ready_to_ship, delete return, nav labels |
-| — | P3a-01 | Not started |
+| 2026-06-09 | P3a-01–07 | Stats hero, completed tab, trust screen, landing page, merchant links, parser feedback |
+| — | P3a-04 Android push | Deferred until dev build |
+| — | P3b-01/02 Apple | Deferred — no Apple Developer account |

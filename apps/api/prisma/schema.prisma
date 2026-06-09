@@ -85,6 +85,7 @@ model User {
   returns        Return[]
   refundStatuses RefundStatus[]
   notifications  NotificationJob[]
+  parseFeedback  ParseFeedback[]
 
   @@map("users")
 }
@@ -165,6 +166,7 @@ model Return {
   trackingLogs   TrackingLog[]
   refundStatus   RefundStatus?
   notifications  NotificationJob[]
+  parseFeedback  ParseFeedback[]
 
   @@map("returns")
 }
@@ -242,4 +244,18 @@ model ParseReviewQueue {
 
   @@unique([linkedEmailId, messageId])
   @@map("parse_review_queue")
+}
+
+model ParseFeedback {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  returnId     String?  @map("return_id") @db.Uuid
+  merchantName String?  @map("merchant_name")
+  reason       String
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  return Return? @relation(fields: [returnId], references: [id], onDelete: SetNull)
+
+  @@map("parse_feedback")
 }

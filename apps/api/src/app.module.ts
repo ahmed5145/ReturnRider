@@ -5,6 +5,7 @@ import { AuthModule } from './auth/auth.module';
 import { EmailsModule } from './emails/emails.module';
 import { HealthController } from './health.controller';
 import { LegalModule } from './legal/legal.module';
+import { MarketingModule } from './marketing/marketing.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PlaidModule } from './plaid/plaid.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -30,6 +31,7 @@ import { WalletModule } from './wallet/wallet.module';
     PlaidModule,
     NotificationsModule,
     LegalModule,
+    MarketingModule,
     UsersModule,
   ],
   controllers: [HealthController],

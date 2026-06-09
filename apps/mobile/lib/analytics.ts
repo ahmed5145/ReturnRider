@@ -8,7 +8,9 @@ export type AnalyticsEvent =
   | 'onboarding_completed'
   | 'parse_review_confirmed'
   | 'refund_confirmed'
-  | 'manual_return_added';
+  | 'manual_return_added'
+  | 'parse_misparsed_reported'
+  | 'merchant_portal_opened';
 
 export function trackEvent(
   event: AnalyticsEvent,

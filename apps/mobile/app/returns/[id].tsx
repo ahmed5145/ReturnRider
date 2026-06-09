@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -79,6 +80,48 @@ export default function ReturnDetailScreen() {
     } finally {
       setActing(false);
     }
+  };
+
+  const openMerchantPortal = () => {
+    const url = data?.merchant_return_url;
+    if (!url) {
+      Alert.alert('No link', `Open ${data?.merchant_name ?? 'the store'} website to start your return.`);
+      return;
+    }
+    trackEvent('merchant_portal_opened', { merchant: data?.merchant_name ?? '' });
+    Linking.openURL(url);
+  };
+
+  const reportNotReturn = () => {
+    if (!id) return;
+    Alert.alert(
+      'Not a return?',
+      'We\'ll learn from this and remove it from your dashboard if it was a mistake.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report & remove',
+          style: 'destructive',
+          onPress: async () => {
+            setActing(true);
+            try {
+              const res = await api.reportMisparsed(id, 'not_a_return');
+              trackEvent('parse_misparsed_reported', { reason: 'not_a_return' });
+              if (res.removed) {
+                router.replace('/');
+              } else {
+                Alert.alert('Thanks', 'Feedback recorded. We\'ll improve matching.');
+                await load();
+              }
+            } catch (e) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Try again');
+            } finally {
+              setActing(false);
+            }
+          },
+        },
+      ],
+    );
   };
 
   const removeReturn = () => {
@@ -198,6 +241,17 @@ export default function ReturnDetailScreen() {
         )}
       </View>
 
+      {!isComplete && data.merchant_return_url && (
+        <>
+          <Text style={styles.section}>Start return</Text>
+          <Pressable style={styles.merchantBtn} onPress={openMerchantPortal}>
+            <Text style={styles.merchantBtnText}>
+              Open {data.merchant_name} orders →
+            </Text>
+          </Pressable>
+        </>
+      )}
+
       {!isComplete && (
         <>
           <Text style={styles.section}>Drop-off</Text>
@@ -242,6 +296,12 @@ export default function ReturnDetailScreen() {
       {isComplete && (
         <Pressable style={styles.dashboardBtn} onPress={() => router.replace('/')}>
           <Text style={styles.dashboardBtnText}>Back to dashboard</Text>
+        </Pressable>
+      )}
+
+      {!isComplete && (
+        <Pressable style={styles.reportBtn} onPress={reportNotReturn} disabled={acting}>
+          <Text style={styles.reportBtnText}>Not a return? Report mistake</Text>
         </Pressable>
       )}
 
@@ -292,6 +352,18 @@ const styles = StyleSheet.create({
   },
   timelineItem: { color: colors.textMuted, fontSize: 14 },
   hint: { color: colors.textDim, fontSize: 12, marginBottom: 12, lineHeight: 18 },
+  merchantBtn: {
+    backgroundColor: colors.accentSoft,
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  merchantBtnText: { color: colors.accent, fontWeight: '600' },
+  reportBtn: { padding: 12, alignItems: 'center', marginBottom: 8 },
+  reportBtnText: { color: colors.textDim, fontSize: 13 },
   btn: {
     backgroundColor: colors.bgElevated,
     padding: 16,

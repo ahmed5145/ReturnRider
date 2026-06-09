@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="ReturnRider — never miss a return deadline. Connect Gmail, get reminders, vault your return QR in Wallet." />
+  <title>ReturnRider — Never miss a return deadline</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #f0f4f8;
+      --muted: #9aa8bc;
+      --accent: #3dd68c;
+      --accent-dim: rgba(61, 214, 140, 0.15);
+      --border: #2d3a4f;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+    header {
+      padding: 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo { font-size: 1.25rem; font-weight: 700; color: var(--text); }
+    .hero {
+      padding: 64px 0 48px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      color: var(--muted);
+      font-size: 1.125rem;
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+    .cta {
+      display: inline-block;
+      background: var(--accent);
+      color: #0f1419;
+      font-weight: 700;
+      padding: 14px 28px;
+      border-radius: 12px;
+      text-decoration: none;
+    }
+    .cta:hover { opacity: 0.9; text-decoration: none; }
+    .badges { margin-top: 20px; color: var(--muted); font-size: 0.875rem; }
+    section { padding: 48px 0; }
+    h2 { font-size: 1.5rem; margin-bottom: 24px; text-align: center; }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    .step {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .step-num {
+      display: inline-block;
+      background: var(--accent-dim);
+      color: var(--accent);
+      font-weight: 700;
+      width: 32px;
+      height: 32px;
+      line-height: 32px;
+      text-align: center;
+      border-radius: 50%;
+      margin-bottom: 12px;
+    }
+    .step h3 { font-size: 1rem; margin-bottom: 8px; }
+    .step p { color: var(--muted); font-size: 0.9rem; }
+    .privacy {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin-top: 16px;
+    }
+    .privacy ul { margin: 12px 0 0 20px; color: var(--muted); }
+    .privacy li { margin-bottom: 6px; }
+    .faq { max-width: 640px; margin: 0 auto; }
+    .faq details {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+    }
+    .faq summary { font-weight: 600; cursor: pointer; }
+    .faq p { color: var(--muted); margin-top: 10px; font-size: 0.9rem; }
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 0;
+      margin-top: 48px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.875rem;
+    }
+    footer a { margin: 0 12px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="logo">ReturnRider</span>
+      <nav>
+        <a href="/legal/privacy">Privacy</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <h1>Never miss a return deadline again</h1>
+      <p>
+        Connect Gmail once. We find return windows from shopping mail, remind you before deadlines,
+        and keep your return QR ready — like a boarding pass for refunds.
+      </p>
+      <a class="cta" href="#download">Get the app</a>
+      <p class="badges">Read-only Gmail · Shopping mail only · We never sell your data</p>
+    </section>
+
+    <section>
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <h3>Connect Gmail</h3>
+          <p>Read-only access. We scan the last 90 days of order &amp; return emails — not personal mail.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <h3>See deadlines</h3>
+          <p>Your dashboard shows every return window, urgency colors, and how much money is at risk.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <h3>Drop off &amp; get paid</h3>
+          <p>Wallet QR at UPS or the store. Confirm when your refund lands. Done.</p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Privacy first</h2>
+      <div class="privacy">
+        <p><strong>We request read-only Gmail access, but only process shopping-related messages.</strong></p>
+        <ul>
+          <li>No send, delete, or modify — ever</li>
+          <li>Commerce keywords only (order, return, refund, shipment)</li>
+          <li>Disconnect any inbox anytime in Settings</li>
+          <li>Never sold for advertising</li>
+        </ul>
+        <p style="margin-top:16px"><a href="/legal/privacy">Full Privacy Policy →</a> · <a href="/legal/terms">Terms of Service →</a></p>
+      </div>
+    </section>
+
+    <section>
+      <h2>FAQ</h2>
+      <div class="faq">
+        <details>
+          <summary>Which stores are supported?</summary>
+          <p>Amazon, Target, Walmart, Nike, ASOS, Best Buy, and dozens more via our email parser. Manual add always works.</p>
+        </details>
+        <details>
+          <summary>Do you read my personal email?</summary>
+          <p>No. We filter for shopping-related senders and subjects before anything is saved. Marketing mail can be dismissed in one tap.</p>
+        </details>
+        <details>
+          <summary>Is it free?</summary>
+          <p>ReturnRider is free during beta. Core features: Gmail sync, deadlines, reminders, and manual returns.</p>
+        </details>
+      </div>
+    </section>
+
+    <section id="download">
+      <h2>Download</h2>
+      <p style="text-align:center;color:var(--muted);max-width:480px;margin:0 auto">
+        Scan the QR in Expo Go during development, or install from the App Store / Play Store when we launch.
+        API docs: <a href="/api/docs">/api/docs</a>
+      </p>
+    </section>
+
+    <footer>
+      <p>© ReturnRider · Flight tracker for your refunds</p>
+      <p style="margin-top:12px">
+        <a href="/legal/privacy">Privacy</a>
+        <a href="/legal/terms">Terms</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

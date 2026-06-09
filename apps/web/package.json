@@ -1,0 +1,9 @@
+{
+  "name": "@returnrider/web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx serve public -p 4321",
+    "preview": "npx serve public -p 4321"
+  }
+}

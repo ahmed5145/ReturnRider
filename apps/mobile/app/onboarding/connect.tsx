@@ -1,6 +1,14 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  View,
+} from 'react-native';
+import { router, Stack } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
 import { connectGmail } from '../../lib/google-auth';
 import {
@@ -8,14 +16,34 @@ import {
   getGoogleRedirectUri,
   isExpoGo,
 } from '../../lib/google-redirect';
+import { colors } from '../../lib/theme';
 
 const REDIRECT_URI = getGoogleRedirectUri();
 const APP_RETURN_URI = isExpoGo() ? getAppReturnUri() : null;
+
+const SHOPPING_KEYWORDS = [
+  'order',
+  'return',
+  'refund',
+  'shipment',
+  'tracking',
+  'receipt',
+  'confirmation',
+];
+
+const TRUST_POINTS = [
+  'Read-only — we never send, delete, or modify mail',
+  'Only shopping-related subjects & senders',
+  'Marketing mail is ignored or one-tap dismissed',
+  'Disconnect any inbox anytime in Settings',
+  'We never sell your email data',
+];
 
 export default function ConnectEmailScreen() {
   const [loading, setLoading] = useState(false);
   const [sync180, setSync180] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDevSetup, setShowDevSetup] = useState(__DEV__);
 
   const onConnect = async () => {
     setLoading(true);
@@ -35,43 +63,72 @@ export default function ConnectEmailScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Connect Gmail</Text>
+    <ScrollView style={styles.container} contentContainerStyle={styles.pad}>
+      <Stack.Screen options={{ title: 'Connect Gmail' }} />
+      <Text style={styles.title}>Your inbox, shopping-only</Text>
       <Text style={styles.body}>
-        One-time read-only connection. We only fetch shopping-related messages—not personal
-        mail. You can disconnect anytime in Settings.
+        One-time read-only connection. We scan order and return emails — not personal conversations.
       </Text>
+
+      <View style={styles.trustCard}>
+        {TRUST_POINTS.map((point) => (
+          <Text key={point} style={styles.trustItem}>
+            ✓ {point}
+          </Text>
+        ))}
+      </View>
+
+      <Text style={styles.keywordsLabel}>Keywords we look for</Text>
+      <View style={styles.keywordRow}>
+        {SHOPPING_KEYWORDS.map((kw) => (
+          <View key={kw} style={styles.keywordChip}>
+            <Text style={styles.keywordText}>{kw}</Text>
+          </View>
+        ))}
+      </View>
 
       <View style={styles.row}>
         <Text style={styles.rowLabel}>Scan last 180 days (optional)</Text>
-        <Switch value={sync180} onValueChange={setSync180} />
+        <Switch
+          value={sync180}
+          onValueChange={setSync180}
+          trackColor={{ false: colors.border, true: colors.accent }}
+        />
       </View>
       <Text style={styles.hint}>
         Default is 90 days. Enabling 180 imports more history but reads more email.
       </Text>
 
-      <View style={styles.setupBox}>
-        <Text style={styles.setupTitle}>Google Console setup</Text>
-        <Text style={styles.setupBody}>
-          Google Console → Web client → Authorized redirect URIs → add:
-        </Text>
-        <Text selectable style={styles.setupUri}>
-          {REDIRECT_URI}
-        </Text>
-        {APP_RETURN_URI && (
-          <>
-            <Text style={[styles.setupBody, { marginTop: 10 }]}>
-              Expo Go also uses this return URL (do not add to Google):
-            </Text>
-            <Text selectable style={styles.setupUriSecondary}>
-              {APP_RETURN_URI}
-            </Text>
-          </>
-        )}
-        <Text style={styles.setupHint}>
-          Leave JavaScript origins empty. Save, wait a few minutes, then tap Connect below.
-        </Text>
-      </View>
+      {showDevSetup && (
+        <View style={styles.setupBox}>
+          <Pressable onPress={() => setShowDevSetup(false)}>
+            <Text style={styles.setupDismiss}>Hide developer setup</Text>
+          </Pressable>
+          <Text style={styles.setupTitle}>Google Console setup</Text>
+          <Text style={styles.setupBody}>
+            Web client → Authorized redirect URIs → add:
+          </Text>
+          <Text selectable style={styles.setupUri}>
+            {REDIRECT_URI}
+          </Text>
+          {APP_RETURN_URI && (
+            <>
+              <Text style={[styles.setupBody, { marginTop: 10 }]}>
+                Expo Go return URL (do not add to Google):
+              </Text>
+              <Text selectable style={styles.setupUriSecondary}>
+                {APP_RETURN_URI}
+              </Text>
+            </>
+          )}
+        </View>
+      )}
+
+      {!showDevSetup && __DEV__ && (
+        <Pressable onPress={() => setShowDevSetup(true)}>
+          <Text style={styles.showDev}>Show developer setup</Text>
+        </Pressable>
+      )}
 
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -83,54 +140,85 @@ export default function ConnectEmailScreen() {
         )}
       </Pressable>
       <Text style={styles.privacyFooter}>
-        Read-only · shopping mail only · disconnect anytime
+        By connecting, you agree to our read-only shopping-mail policy.
       </Text>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#16213e', padding: 24, paddingTop: 40 },
-  title: { fontSize: 22, fontWeight: '700', color: '#fff' },
-  body: { color: '#c0c0d0', lineHeight: 22, marginVertical: 16 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 },
-  rowLabel: { color: '#fff', flex: 1, paddingRight: 12 },
-  hint: { color: '#888', fontSize: 12, marginTop: 8 },
+  container: { flex: 1, backgroundColor: colors.bg },
+  pad: { padding: 24, paddingBottom: 40 },
+  title: { fontSize: 24, fontWeight: '700', color: colors.text },
+  body: { color: colors.textMuted, lineHeight: 22, marginVertical: 12 },
+  trustCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 8,
+    marginVertical: 16,
+  },
+  trustItem: { color: colors.textMuted, fontSize: 14, lineHeight: 20 },
+  keywordsLabel: {
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 14,
+    marginBottom: 10,
+  },
+  keywordRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  keywordChip: {
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 16,
+  },
+  keywordText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  rowLabel: { color: colors.text, flex: 1, paddingRight: 12 },
+  hint: { color: colors.textDim, fontSize: 12, marginTop: 8, lineHeight: 18 },
   setupBox: {
-    marginTop: 20,
+    marginTop: 16,
     padding: 14,
     borderRadius: 12,
-    backgroundColor: '#1a1a2e',
+    backgroundColor: colors.bgCard,
     borderWidth: 1,
-    borderColor: '#2d3a4f',
+    borderColor: colors.border,
   },
-  setupTitle: { color: '#fff', fontWeight: '600', fontSize: 14 },
-  setupBody: { color: '#9aa8bc', fontSize: 12, marginTop: 8, lineHeight: 18 },
+  setupDismiss: { color: colors.textDim, fontSize: 12, marginBottom: 8 },
+  setupTitle: { color: colors.text, fontWeight: '600', fontSize: 14 },
+  setupBody: { color: colors.textMuted, fontSize: 12, marginTop: 8, lineHeight: 18 },
   setupUri: {
-    color: '#3dd68c',
+    color: colors.success,
     fontSize: 13,
     fontWeight: '600',
     marginTop: 8,
     lineHeight: 20,
   },
   setupUriSecondary: {
-    color: '#9aa8bc',
+    color: colors.textDim,
     fontSize: 12,
     marginTop: 6,
     lineHeight: 18,
   },
-  setupHint: { color: '#6b7a8f', fontSize: 11, marginTop: 8, lineHeight: 16 },
+  showDev: { color: colors.accent, fontSize: 13, marginTop: 12 },
   error: { color: '#ff6b6b', marginTop: 12 },
   btn: {
     backgroundColor: '#4285F4',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 32,
+    marginTop: 24,
   },
   btnText: { color: '#fff', fontWeight: '600' },
   privacyFooter: {
-    color: '#6b7a8f',
+    color: colors.textDim,
     fontSize: 12,
     textAlign: 'center',
     marginTop: 16,

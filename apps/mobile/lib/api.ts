@@ -82,6 +82,28 @@ export const api = {
       body: JSON.stringify({ expo_push_token }),
     }),
 
+  getReturnStats: () =>
+    request<{
+      at_risk_amount: number;
+      active_count: number;
+      refunded_ytd: number;
+      refunded_all_time: number;
+      completed_count: number;
+    }>('/returns/stats'),
+
+  getCompletedReturns: () =>
+    request<{
+      data: Array<{
+        id: string;
+        merchant_name: string;
+        item_summary: string;
+        status: string;
+        refund_amount: number | null;
+        refunded_at: string | null;
+        expected_refund_amount: number | null;
+      }>;
+    }>('/returns/completed'),
+
   getActiveReturns: (status?: string) =>
     request<{
       data: Array<{
@@ -115,7 +137,17 @@ export const api = {
         actual_amount: number | null;
         user_confirmed_at: string | null;
       } | null;
+      merchant_return_url: string | null;
     }>(`/returns/${id}`),
+
+  reportMisparsed: (
+    id: string,
+    reason: 'not_a_return' | 'wrong_deadline' | 'wrong_merchant',
+  ) =>
+    request<{ reported: boolean; removed: boolean }>(`/returns/${id}/report-misparsed`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
 
   snoozeReturn: (id: string) =>
     request(`/returns/${id}/snooze`, { method: 'POST' }),
