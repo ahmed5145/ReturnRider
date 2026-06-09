@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api/v1';
 const TOKEN_KEY = 'auth_token';
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
   const token = await getAuthToken();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -13,6 +13,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (res.status === 401 && !retried && path !== '/auth/dev-token') {
+    await clearAuthToken();
+    await ensureAuthToken();
+    return request(path, options, true);
+  }
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
@@ -40,10 +45,25 @@ export async function setAuthToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);
 }
 
+export async function clearAuthToken(): Promise<void> {
+  if (Platform.OS === 'web') {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+    return;
+  }
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
 export async function ensureAuthToken(): Promise<string> {
   let token = await getAuthToken();
   if (!token) {
     const dev = await api.devToken('dev-user', 'dev@returnrider.com');
+    if (!dev.token) {
+      throw new Error(
+        'Could not sign in. On staging, set ALLOW_DEV_AUTH=true on Render or sync JWT_SECRET with local.',
+      );
+    }
     await setAuthToken(dev.token);
     token = dev.token;
   }

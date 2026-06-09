@@ -12,7 +12,8 @@ import {
 } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../../lib/api-base';
-import { api, ensureAuthToken } from '../../lib/api';
+import { router } from 'expo-router';
+import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/theme';
@@ -118,6 +119,11 @@ export default function SettingsScreen() {
     });
   };
 
+  const resetSession = async () => {
+    await clearAuthToken();
+    router.replace('/');
+  };
+
   const formatLastSync = (iso: string | null | undefined) => {
     if (!iso) return 'Never synced';
     const d = new Date(iso);
@@ -144,6 +150,14 @@ export default function SettingsScreen() {
       <Pressable style={styles.inviteCard} onPress={inviteFriends}>
         <Text style={styles.inviteTitle}>Protect a friend&apos;s refund</Text>
         <Text style={styles.hint}>Share ReturnRider — help someone never miss a deadline.</Text>
+      </Pressable>
+
+      <Text style={styles.section}>Account</Text>
+      <Pressable style={styles.inviteCard} onPress={resetSession}>
+        <Text style={styles.inviteTitle}>Reset session</Text>
+        <Text style={styles.hint}>
+          Use after switching API (local ↔ staging). Clears saved login and signs in again.
+        </Text>
       </Pressable>
 
       <Text style={styles.section}>Privacy & data</Text>

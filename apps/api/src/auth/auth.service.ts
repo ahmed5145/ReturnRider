@@ -40,7 +40,10 @@ export class AuthService {
 
   /** Dev helper: issue token for testing */
   signDevToken(sub: string, email: string): string {
-    const secret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production-min-32';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new UnauthorizedException('JWT not configured');
+    }
     return jwt.sign({ sub, email }, secret, { expiresIn: '7d' });
   }
 }

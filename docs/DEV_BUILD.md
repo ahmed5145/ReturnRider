@@ -91,6 +91,16 @@ This is **normal** on the free tier — queue times are often **15–60+ minutes
 
 If it stays queued for **2+ hours**, cancel on the dashboard and re-run the build.
 
+### Android build fails on `rnplaidlink` / `TurboModule::create`
+
+React Native 0.81 + New Architecture breaks `react-native-plaid-link-sdk` **&lt; 12.5**. The repo pins **^12.8.0**. After pulling:
+
+```cmd
+cd apps\mobile
+npm install
+npx eas-cli build --profile development --platform android
+```
+
 ---
 
 ### Test push after installing dev build

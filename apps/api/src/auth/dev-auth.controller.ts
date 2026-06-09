@@ -18,7 +18,9 @@ export class DevAuthController {
 
   @Post('dev-token')
   devToken(@Body() dto: DevTokenDto) {
-    if (process.env.NODE_ENV === 'production') {
+    const allowStaging =
+      process.env.ALLOW_DEV_AUTH === 'true' || process.env.ALLOW_DEV_AUTH === '1';
+    if (process.env.NODE_ENV === 'production' && !allowStaging) {
       return { error: 'Not available in production' };
     }
     return { token: this.authService.signDevToken(dto.sub, dto.email) };
