@@ -4,6 +4,36 @@ ReturnRider uses Plaid for optional **refund radar** — matching bank deposits 
 
 ---
 
+## Where to paste keys (API only — not mobile)
+
+Plaid secrets live **only on the NestJS API**. The mobile app never sees `PLAID_CLIENT_ID` or `PLAID_SECRET`.
+
+| Where | File / UI | When you need it |
+|-------|-----------|------------------|
+| **Local API** | `apps/api/.env` | Phone points at `http://LAN_IP:3000/api/v1` |
+| **Staging API** | [Render](https://dashboard.render.com/) → `returnrider-api` → **Environment** | Phone uses `returnrider-api.onrender.com` (Expo Go today) |
+| **Mobile** | — | **Nothing** — no Plaid vars in `apps/mobile/.env` |
+| **Root** | `.env` at repo root | **Not used** — use `apps/api/.env` only |
+
+```env
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=sandbox-xxxxxxxx   # must be the sandbox secret, not production
+PLAID_ENV=sandbox
+```
+
+After any change: **restart local API** or **redeploy Render**.
+
+Verify staging:
+
+```text
+GET https://returnrider-api.onrender.com/health
+→ "features": { "plaid": true, ... }
+```
+
+**Expo Go on iPhone:** Connect bank needs the **Android dev APK** (Plaid native SDK). Keys on Render still matter once you test on emulator or a friend's Android phone.
+
+---
+
 ## 1. Create a Plaid account
 
 1. Sign up at [dashboard.plaid.com](https://dashboard.plaid.com/).

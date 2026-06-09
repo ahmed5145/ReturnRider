@@ -1,6 +1,7 @@
 import { BullModule } from '@nestjs/bullmq';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { EmailsModule } from './emails/emails.module';
 import { HealthController } from './health.controller';
@@ -16,7 +17,11 @@ import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      // Load apps/api/.env even when started from monorepo root (npm run api:dev)
+      envFilePath: [join(__dirname, '..', '.env'), '.env'],
+    }),
     BullModule.forRoot({
       connection: {
         url: process.env.REDIS_URL ?? 'redis://localhost:6379',

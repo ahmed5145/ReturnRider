@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Link, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../../lib/api-base';
+import { fetchApiHealth } from '../../lib/health';
 import { router } from 'expo-router';
 import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
 import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
@@ -49,10 +50,16 @@ export default function SettingsScreen() {
   const [referredApplied, setReferredApplied] = useState(false);
   const [referralInput, setReferralInput] = useState('');
   const [referralLoading, setReferralLoading] = useState(false);
+  const [serverPlaidReady, setServerPlaidReady] = useState<boolean | null>(null);
 
   const load = async () => {
     await ensureAuthToken();
-    const [res, me] = await Promise.all([api.listEmails(), api.getMe()]);
+    const [res, me, health] = await Promise.all([
+      api.listEmails(),
+      api.getMe(),
+      fetchApiHealth().catch(() => null),
+    ]);
+    setServerPlaidReady(health?.features?.plaid ?? null);
     setEmails(res.data);
     setHasPush(me.has_push_token);
     setHasPlaid(me.has_plaid_linked);
@@ -125,7 +132,7 @@ export default function SettingsScreen() {
       Alert.alert(
         'Bank linking unavailable',
         msg.includes('not configured') || msg.includes('503')
-          ? 'Plaid sandbox is not set up on the server yet. Sandbox is free at dashboard.plaid.com — add PLAID_CLIENT_ID and PLAID_SECRET on Render.'
+          ? 'Plaid keys must be on the API your app uses: Render Environment (staging) or apps/api/.env (local). Not in the mobile app. See docs/PLAID_SETUP.md.'
           : msg,
       );
     } finally {
@@ -347,6 +354,17 @@ export default function SettingsScreen() {
         <Text style={styles.hint}>
           Auto-detect when refunds hit your account. Uses Plaid sandbox in dev.
         </Text>
+        {serverPlaidReady === false && (
+          <Text style={styles.errorText}>
+            API server: Plaid not configured — add PLAID_CLIENT_ID and PLAID_SECRET on Render (or
+            apps/api/.env for local).
+          </Text>
+        )}
+        {serverPlaidReady === true && !hasPlaid && (
+          <Text style={styles.hint}>
+            API server ready. Bank link needs the Android dev APK (Plaid native SDK — not Expo Go).
+          </Text>
+        )}
         <View style={styles.row}>
           {!hasPlaid && (
             <Pressable onPress={linkBank} disabled={plaidLoading}>

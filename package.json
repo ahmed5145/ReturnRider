@@ -10,6 +10,7 @@
     "api:dev": "npm run dev -w @returnrider/api",
     "api:build": "npm run build -w @returnrider/api",
     "mobile:start": "cd apps/mobile && npm start",
+    "mobile:install": "cd apps/mobile && npm install",
     "db:migrate": "docker compose exec -T postgres psql -U returnrider -d returnrider -f /migrations/001_initial.sql",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down"

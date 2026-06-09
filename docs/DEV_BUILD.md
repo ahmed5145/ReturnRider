@@ -43,6 +43,9 @@ npx expo start --go -c
 | Gmail, dashboard, returns, snooze | Push notifications |
 | Parse review, manual add, settings | Plaid bank link |
 | Staging API (`returnrider-api.onrender.com`) | Google / Apple Wallet |
+| Settings shows “API server ready” for Plaid | Connect bank + Plaid Link UI |
+
+**Plaid keys:** API only — `apps/api/.env` (local) **and** Render Environment (staging). See [PLAID_SETUP.md](./PLAID_SETUP.md).
 
 **Optional — Android emulator** (for push without a physical device):
 

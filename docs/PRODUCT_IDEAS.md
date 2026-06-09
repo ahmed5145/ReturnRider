@@ -215,4 +215,4 @@ Phase 4 — Growth
 | 2026-06-04 | UX-04/06/10, Phase 4d docs | Swipe snooze, theme toggle, font scaling, OAuth/Plaid/ASO guides |
 | — | P3a-04 Android push | APK via EAS — emulator or friend's phone if no Android device |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |
-| — | Migration 006 | Run `006_referral.sql` on Neon if not applied |
+| 2026-06-09 | Migration 006 | Referral columns on Neon |
