@@ -19,13 +19,39 @@ export class LegalController {
     return 'Document not found.';
   }
 
+  private sendHtml(res: Response, filename: string, title: string) {
+    const text = this.readLegal(filename);
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    res.type('text/html').send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>${title} — ReturnRider</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f1419; color: #f0f4f8; padding: 24px; line-height: 1.6; }
+    pre { white-space: pre-wrap; word-wrap: break-word; font-size: 14px; }
+    a { color: #3dd68c; }
+  </style>
+</head>
+<body>
+  <p><a href="/">← ReturnRider</a></p>
+  <h1>${title}</h1>
+  <pre>${escaped}</pre>
+</body>
+</html>`);
+  }
+
   @Get('terms')
   getTerms(@Res() res: Response) {
-    res.type('text/plain').send(this.readLegal('TERMS_OF_SERVICE.md'));
+    this.sendHtml(res, 'TERMS_OF_SERVICE.md', 'Terms of Service');
   }
 
   @Get('privacy')
   getPrivacy(@Res() res: Response) {
-    res.type('text/plain').send(this.readLegal('PRIVACY_POLICY.md'));
+    this.sendHtml(res, 'PRIVACY_POLICY.md', 'Privacy Policy');
   }
 }

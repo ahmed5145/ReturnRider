@@ -29,3 +29,9 @@ export function getMerchantReturnUrl(merchantName: string): string | null {
   }
   return null;
 }
+
+/** Fallback when we have no curated portal URL for this store name. */
+export function getMerchantSearchUrl(merchantName: string): string {
+  const q = encodeURIComponent(`${merchantName} order return`);
+  return `https://www.google.com/search?q=${q}`;
+}

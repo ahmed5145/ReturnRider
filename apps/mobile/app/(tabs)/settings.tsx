@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Linking,
   Pressable,
   Share,
   StyleSheet,
@@ -14,6 +13,8 @@ import { Link, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../../lib/api-base';
 import { router } from 'expo-router';
 import { api, clearAuthToken, ensureAuthToken } from '../../lib/api';
+import { getInviteShareMessage } from '../../lib/invite';
+import { openUrl } from '../../lib/open-url';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { colors } from '../../lib/theme';
@@ -107,16 +108,29 @@ export default function SettingsScreen() {
         Alert.alert('Bank linked', 'We\'ll scan for refunds and match them to your returns.');
         await load();
       }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Try again';
+      Alert.alert(
+        'Bank linking unavailable',
+        msg.includes('not configured') || msg.includes('503')
+          ? 'Plaid sandbox is not set up on the server yet. Sandbox is free at dashboard.plaid.com — add PLAID_CLIENT_ID and PLAID_SECRET on Render.'
+          : msg,
+      );
     } finally {
       setPlaidLoading(false);
     }
   };
 
   const inviteFriends = async () => {
-    await Share.share({
-      message:
-        'I use ReturnRider to track return deadlines and never miss a refund. Check it out!',
-    });
+    await Share.share({ message: getInviteShareMessage() });
+  };
+
+  const openLegal = async (path: 'privacy' | 'terms') => {
+    try {
+      await openUrl(legalUrl(path));
+    } catch (e) {
+      Alert.alert('Could not open link', e instanceof Error ? e.message : 'Try again');
+    }
   };
 
   const resetSession = async () => {
@@ -206,10 +220,10 @@ export default function SettingsScreen() {
         <Text style={styles.privacyItem}>✓ Read-only Gmail — shopping mail only</Text>
         <Text style={styles.privacyItem}>✓ We never sell your email data</Text>
         <Text style={styles.privacyItem}>✓ Disconnect any inbox anytime</Text>
-        <Pressable onPress={() => Linking.openURL(legalUrl('privacy'))}>
+        <Pressable onPress={() => openLegal('privacy')}>
           <Text style={styles.legalLink}>Privacy Policy →</Text>
         </Pressable>
-        <Pressable onPress={() => Linking.openURL(legalUrl('terms'))}>
+        <Pressable onPress={() => openLegal('terms')}>
           <Text style={styles.legalLink}>Terms of Service →</Text>
         </Pressable>
         <Pressable onPress={downloadMyData} style={styles.dataAction}>

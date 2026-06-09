@@ -234,12 +234,23 @@ export default function ReturnDetailScreen() {
           router.replace('/');
         }}
       />
-      <Stack.Screen options={{ title: data.merchant_name }} />
+      <Stack.Screen
+        options={{
+          title: data.merchant_name,
+          headerBackTitle: 'Dashboard',
+        }}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+      <Pressable
+        style={styles.backLink}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      >
+        <Text style={styles.backLinkText}>← Back to dashboard</Text>
+      </Pressable>
 
       <View style={[styles.hero, { borderColor: urgencyColor }]}>
         <Text style={styles.merchant}>{data.merchant_name}</Text>
@@ -285,7 +296,7 @@ export default function ReturnDetailScreen() {
         )}
       </View>
 
-      {!isComplete && (data.merchant_return_url || data.return_label_url) && (
+      {!isComplete && (
         <>
           <Text style={styles.section}>Start return</Text>
           {data.return_label_url && (
@@ -299,7 +310,9 @@ export default function ReturnDetailScreen() {
           {data.merchant_return_url && (
             <Pressable style={styles.merchantBtn} onPress={openMerchantPortal}>
               <Text style={styles.merchantBtnText}>
-                Open {data.merchant_name} orders →
+                {data.merchant_portal_curated
+                  ? `Open ${data.merchant_name} orders →`
+                  : `Find ${data.merchant_name} return page →`}
               </Text>
             </Pressable>
           )}
@@ -356,9 +369,13 @@ export default function ReturnDetailScreen() {
                 disabled={acting}
               >
                 <Text style={styles.secondaryBtnText}>
-                  Snooze 24h ({data.snoozes_remaining} left)
+                  Snooze 24h · {data.snoozes_remaining} snooze
+                  {data.snoozes_remaining === 1 ? '' : 's'} left
                 </Text>
               </Pressable>
+              <Text style={styles.snoozeHint}>
+                You can snooze a deadline up to 2 times (extends 24h each time).
+              </Text>
             </>
           )}
 
@@ -409,6 +426,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { flex: 1 },
   content: { padding: 24, paddingBottom: 48 },
+  backLink: { marginBottom: 12 },
+  backLinkText: { color: colors.accent, fontWeight: '600', fontSize: 15 },
+  snoozeHint: { color: colors.textDim, fontSize: 12, marginTop: 8, lineHeight: 18 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   errorText: { color: colors.textMuted },
   hero: {

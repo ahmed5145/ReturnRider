@@ -27,7 +27,20 @@ export async function connectPlaidBank(): Promise<boolean> {
     return false;
   }
 
-  const { link_token } = await api.plaidLinkToken();
+  let link_token: string;
+  try {
+    ({ link_token } = await api.plaidLinkToken());
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('not configured') || msg.includes('503')) {
+      Alert.alert(
+        'Plaid not configured',
+        'Add PLAID_CLIENT_ID and PLAID_SECRET on the API server. Plaid sandbox is free for development.',
+      );
+      return false;
+    }
+    throw e;
+  }
 
   return new Promise((resolve) => {
     sdk.create({ token: link_token });

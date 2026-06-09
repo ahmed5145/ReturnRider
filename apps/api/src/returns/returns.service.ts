@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ReturnStatus } from '@prisma/client';
-import { getMerchantReturnUrl } from '../common/merchant-portals';
+import { getMerchantReturnUrl, getMerchantSearchUrl } from '../common/merchant-portals';
 import { guessCarrier } from '../common/carrier-guess';
 import { computeSnoozeDeadline } from '../common/snooze-utils';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
@@ -253,10 +253,8 @@ export class ReturnsService {
     };
   }
 
-  async listActive(userId: string, daysAhead = 30, statusFilter?: string) {
+  async listActive(userId: string, _daysAhead = 180, statusFilter?: string) {
     const now = new Date();
-    const until = new Date(now);
-    until.setDate(until.getDate() + daysAhead);
 
     const statuses: ReturnStatus[] =
       statusFilter === 'all_active' || !statusFilter
@@ -274,8 +272,8 @@ export class ReturnsService {
         userId,
         status: { in: statuses },
         OR: [
-          { returnDeadlineAt: { gte: now, lte: until } },
           { returnDeadlineAt: null },
+          { returnDeadlineAt: { gte: now } },
           { status: { in: ['in_transit', 'awaiting_refund', 'delivered_to_merchant'] } },
         ],
       },
@@ -382,7 +380,10 @@ export class ReturnsService {
             user_confirmed_at: ret.refundStatus.userConfirmedAt?.toISOString() ?? null,
           }
         : null,
-      merchant_return_url: getMerchantReturnUrl(ret.order.merchantName),
+      merchant_return_url:
+        getMerchantReturnUrl(ret.order.merchantName) ??
+        getMerchantSearchUrl(ret.order.merchantName),
+      merchant_portal_curated: !!getMerchantReturnUrl(ret.order.merchantName),
     };
   }
 

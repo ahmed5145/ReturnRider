@@ -30,7 +30,7 @@ export default function AddReturnScreen() {
         return_deadline_at: deadline.toISOString(),
         expected_refund_amount: amount ? parseFloat(amount) : undefined,
       });
-      router.replace(`/returns/${res.id}`);
+      router.push(`/returns/${res.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
     } finally {

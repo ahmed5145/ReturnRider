@@ -170,6 +170,7 @@ export const api = {
         user_confirmed_at: string | null;
       } | null;
       merchant_return_url: string | null;
+      merchant_portal_curated?: boolean;
       return_label_url: string | null;
       carrier: string | null;
       tracking_events: Array<{

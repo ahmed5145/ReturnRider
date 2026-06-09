@@ -30,7 +30,6 @@
     "react-native-web": "~0.21.0"
   },
   "devDependencies": {
-    "eas-cli": "^16.0.0",
     "@babel/core": "^7.25.0",
     "@types/react": "~19.1.0",
     "babel-preset-expo": "~54.0.0",

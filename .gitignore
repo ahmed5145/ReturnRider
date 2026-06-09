@@ -22,3 +22,5 @@ apps/api/.env
 services/email-worker/bin/
 *.pkpass
 wallet-certs/
+builds/android/*.apk
+*.apk

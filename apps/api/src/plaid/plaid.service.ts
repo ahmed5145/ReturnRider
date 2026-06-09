@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import {
   Configuration,
   PlaidApi,
@@ -32,7 +32,16 @@ export class PlaidService {
     this.client = new PlaidApi(configuration);
   }
 
+  private assertConfigured(): void {
+    if (!process.env.PLAID_CLIENT_ID?.trim() || !process.env.PLAID_SECRET?.trim()) {
+      throw new ServiceUnavailableException(
+        'Bank linking is not configured on this server. Add PLAID_CLIENT_ID and PLAID_SECRET (free Plaid sandbox at dashboard.plaid.com).',
+      );
+    }
+  }
+
   async createLinkToken(userId: string) {
+    this.assertConfigured();
     const user = await this.prisma.user.findUniqueOrThrow({ where: { id: userId } });
     const response = await this.client.linkTokenCreate({
       user: { client_user_id: userId },
@@ -45,6 +54,7 @@ export class PlaidService {
   }
 
   async exchangePublicToken(userId: string, publicToken: string) {
+    this.assertConfigured();
     const exchange = await this.client.itemPublicTokenExchange({
       public_token: publicToken,
     });

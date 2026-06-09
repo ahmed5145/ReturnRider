@@ -7,9 +7,12 @@ export default function ReturnsLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.bgCard },
         headerTintColor: colors.text,
-        headerBackTitle: 'Dashboard',
+        headerBackTitle: 'Back',
+        headerShown: true,
         contentStyle: { backgroundColor: colors.bg },
       }}
-    />
+    >
+      <Stack.Screen name="[id]" options={{ title: 'Return details' }} />
+    </Stack>
   );
 }
