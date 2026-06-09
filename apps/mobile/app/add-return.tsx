@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
@@ -22,7 +22,7 @@ export default function AddReturnScreen() {
       const deadline = new Date();
       deadline.setDate(deadline.getDate() + parseInt(days, 10));
       trackEvent('manual_return_added', { merchant });
-      await api.createManualReturn({
+      const res = await api.createManualReturn({
         merchant_name: merchant,
         external_order_id: orderId,
         item_summary: item,
@@ -30,7 +30,7 @@ export default function AddReturnScreen() {
         return_deadline_at: deadline.toISOString(),
         expected_refund_amount: amount ? parseFloat(amount) : undefined,
       });
-      router.replace('/');
+      router.replace(`/returns/${res.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to save');
     } finally {
@@ -40,9 +40,7 @@ export default function AddReturnScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.pad}>
-      <Link href="/" style={styles.back}>
-        <Text style={styles.backText}>← Dashboard</Text>
-      </Link>
+      <Stack.Screen options={{ title: 'Add return' }} />
       <Text style={styles.title}>Add return manually</Text>
       <Text style={styles.sub}>
         No email receipt? Enter details from your paper receipt or order confirmation.
@@ -109,9 +107,7 @@ export default function AddReturnScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  pad: { padding: 24, paddingTop: 48 },
-  back: { marginBottom: 16 },
-  backText: { color: colors.accent, fontSize: 14, fontWeight: '600' },
+  pad: { padding: 24, paddingTop: 16 },
   title: { fontSize: 22, fontWeight: '700', color: colors.text },
   sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
   label: { color: colors.textMuted, marginTop: 12, marginBottom: 6 },

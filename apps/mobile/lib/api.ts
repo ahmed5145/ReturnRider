@@ -120,6 +120,9 @@ export const api = {
   snoozeReturn: (id: string) =>
     request(`/returns/${id}/snooze`, { method: 'POST' }),
 
+  deleteReturn: (id: string) =>
+    request<{ deleted: boolean }>(`/returns/${id}`, { method: 'DELETE' }),
+
   confirmRefund: (id: string, amount: number) =>
     request<{ status: string }>(`/returns/${id}/confirm-refund`, {
       method: 'POST',
@@ -134,7 +137,7 @@ export const api = {
     return_window_days?: number;
     expected_refund_amount?: number;
   }) =>
-    request<{ id: string }>('/returns/manual', {
+    request<{ id: string; status: string }>('/returns/manual', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

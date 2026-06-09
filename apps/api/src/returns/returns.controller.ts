@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -66,4 +67,12 @@ export class ReturnsController {
   ) {
     return this.returnsService.snooze(user.id, id);
   }
-}
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Remove a draft or completed return' })
+  async deleteOne(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.returnsService.deleteReturn(user.id, id);
+  }

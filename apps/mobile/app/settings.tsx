@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { Link, Stack, useFocusEffect } from 'expo-router';
+import { Link, router, Stack, useFocusEffect } from 'expo-router';
 import { legalUrl } from '../lib/api-base';
 import { api, ensureAuthToken } from '../lib/api';
 import { colors } from '../lib/theme';
@@ -104,9 +104,9 @@ export default function SettingsScreen() {
       <Link href="/onboarding/connect" style={styles.addBtn}>
         <Text style={styles.addBtnText}>+ Add another email</Text>
       </Link>
-      <Link href="/" style={styles.back}>
+      <Pressable style={styles.back} onPress={() => router.replace('/')}>
         <Text style={styles.backText}>Back to dashboard</Text>
-      </Link>
+      </Pressable>
     </>
   );
 

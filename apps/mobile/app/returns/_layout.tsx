@@ -7,7 +7,7 @@ export default function ReturnsLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: colors.bgCard },
         headerTintColor: colors.text,
-        headerTitle: 'Return details',
+        headerBackTitle: 'Dashboard',
         contentStyle: { backgroundColor: colors.bg },
       }}
     />

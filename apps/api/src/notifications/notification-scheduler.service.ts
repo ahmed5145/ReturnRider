@@ -98,11 +98,22 @@ export class NotificationSchedulerService {
         },
       );
 
-      await this.prisma.notificationJob.create({
-        data: {
+      await this.prisma.notificationJob.upsert({
+        where: {
+          returnId_triggerId: {
+            returnId: returnRecord.id,
+            triggerId: trigger.triggerId,
+          },
+        },
+        create: {
           returnId: returnRecord.id,
           userId: user.id,
           triggerId: trigger.triggerId,
+          scheduledAt,
+          status: 'pending',
+          bullJobId: job.id,
+        },
+        update: {
           scheduledAt,
           status: 'pending',
           bullJobId: job.id,
@@ -113,7 +124,7 @@ export class NotificationSchedulerService {
 
   async cancelForReturn(returnId: string) {
     const jobs = await this.prisma.notificationJob.findMany({
-      where: { returnId, status: 'pending' },
+      where: { returnId },
     });
 
     for (const j of jobs) {
@@ -123,9 +134,8 @@ export class NotificationSchedulerService {
       }
     }
 
-    await this.prisma.notificationJob.updateMany({
-      where: { returnId, status: 'pending' },
-      data: { status: 'cancelled' },
+    await this.prisma.notificationJob.deleteMany({
+      where: { returnId },
     });
   }
 

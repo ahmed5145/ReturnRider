@@ -70,6 +70,24 @@ export class ReturnsService {
       where: { orderId: order.id, userId },
     });
     if (existing) {
+      if (existing.status === ReturnStatus.draft && data.source === 'manual') {
+        let deadline = data.returnDeadlineAt;
+        if (!deadline && data.returnWindowDays) {
+          deadline = new Date();
+          deadline.setDate(deadline.getDate() + data.returnWindowDays);
+        }
+        return this.prisma.return.update({
+          where: { id: existing.id },
+          data: {
+            status: ReturnStatus.ready_to_ship,
+            itemSummary: data.itemSummary,
+            expectedRefundAmount: data.expectedRefundAmount,
+            returnDeadlineAt: deadline,
+            returnWindowDays: data.returnWindowDays ?? 30,
+          },
+          include: { order: true },
+        });
+      }
       return this.prisma.return.findFirstOrThrow({
         where: { id: existing.id },
         include: { order: true },
@@ -82,11 +100,16 @@ export class ReturnsService {
       deadline.setDate(deadline.getDate() + data.returnWindowDays);
     }
 
+    const status =
+      data.source === 'manual' || data.qrPayload
+        ? ReturnStatus.ready_to_ship
+        : ReturnStatus.draft;
+
     return this.prisma.return.create({
       data: {
         userId,
         orderId: order.id,
-        status: data.qrPayload ? ReturnStatus.ready_to_ship : ReturnStatus.draft,
+        status,
         itemSummary: data.itemSummary,
         expectedRefundAmount: data.expectedRefundAmount,
         returnDeadlineAt: deadline,
@@ -333,5 +356,24 @@ export class ReturnsService {
     });
 
     await this.notificationScheduler.cancelForReturn(returnId);
+  }
+
+  async deleteReturn(userId: string, returnId: string) {
+    const ret = await this.loadReturn(userId, returnId);
+    const deletable: ReturnStatus[] = [
+      ReturnStatus.draft,
+      ReturnStatus.cancelled,
+      ReturnStatus.expired,
+      ReturnStatus.refund_completed,
+    ];
+    if (!deletable.includes(ret.status)) {
+      throw new BadRequestException(
+        'Only draft, completed, cancelled, or expired returns can be removed',
+      );
+    }
+
+    await this.notificationScheduler.cancelForReturn(returnId);
+    await this.prisma.return.delete({ where: { id: returnId } });
+    return { deleted: true };
   }
 }

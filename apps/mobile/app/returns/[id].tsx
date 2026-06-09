@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
 import { api } from '../../lib/api';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
@@ -81,6 +81,32 @@ export default function ReturnDetailScreen() {
     }
   };
 
+  const removeReturn = () => {
+    if (!id) return;
+    Alert.alert(
+      'Remove this return?',
+      'This deletes it from your dashboard. You can always add it again manually.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setActing(true);
+            try {
+              await api.deleteReturn(id);
+              router.replace('/');
+            } catch (e) {
+              Alert.alert('Could not remove', e instanceof Error ? e.message : 'Try again');
+            } finally {
+              setActing(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const confirmRefund = async () => {
     if (!id) return;
     const amount = parseFloat(refundAmount);
@@ -92,8 +118,11 @@ export default function ReturnDetailScreen() {
     try {
       await api.confirmRefund(id, amount);
       trackEvent('refund_confirmed', { amount });
+      Alert.alert('Refund recorded', 'Nice — we marked this return complete.', [
+        { text: 'Back to dashboard', onPress: () => router.replace('/') },
+        { text: 'Stay here' },
+      ]);
       await load();
-      Alert.alert('Refund recorded', 'Nice — we marked this return complete.');
     } catch (e) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Try again');
     } finally {
@@ -121,6 +150,11 @@ export default function ReturnDetailScreen() {
 
   const urgencyColor = getUrgencyColor(data.days_remaining);
   const isComplete = data.status === 'refund_completed';
+  const canRemove =
+    data.status === 'draft' ||
+    data.status === 'refund_completed' ||
+    data.status === 'cancelled' ||
+    data.status === 'expired';
 
   return (
     <View style={styles.container}>
@@ -204,6 +238,20 @@ export default function ReturnDetailScreen() {
           </Pressable>
         </>
       )}
+
+      {isComplete && (
+        <Pressable style={styles.dashboardBtn} onPress={() => router.replace('/')}>
+          <Text style={styles.dashboardBtnText}>Back to dashboard</Text>
+        </Pressable>
+      )}
+
+      {canRemove && (
+        <Pressable style={styles.removeBtn} onPress={removeReturn} disabled={acting}>
+          <Text style={styles.removeBtnText}>
+            {data.status === 'draft' ? 'Remove draft' : 'Remove from list'}
+          </Text>
+        </Pressable>
+      )}
       </ScrollView>
     </View>
   );
@@ -282,4 +330,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   confirmBtnText: { color: '#fff', fontWeight: '600' },
+  dashboardBtn: {
+    backgroundColor: colors.accent,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  dashboardBtnText: { color: '#fff', fontWeight: '600' },
+  removeBtn: {
+    padding: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#ff6b6b',
+  },
+  removeBtnText: { color: '#ff6b6b', fontWeight: '600' },
 });
