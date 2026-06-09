@@ -56,7 +56,7 @@ Restart Expo: `npx expo start -c`
 
 ### Google OAuth (physical phone)
 
-Expo Go still uses `https://auth.expo.io/@ahmedm1/returnrider` — no change unless you switch to a dev build.
+Expo Go still uses `https://auth.expo.io/@ahmed5145/returnrider` — no change unless you switch to a dev build.
 
 ### CORS
 

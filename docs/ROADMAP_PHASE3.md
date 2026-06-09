@@ -1,6 +1,6 @@
 # ReturnRider — Phase 3 Roadmap
 
-> **Status:** IN PROGRESS — started 2026-06-09  
+> **Status:** Phase 3a–3b COMPLETE — smoke test pending. Phase 4 deferred.  
 > **Authority:** Builds on [ROADMAP_PHASE2.md](./ROADMAP_PHASE2.md) (complete) and [PRODUCT_IDEAS.md](./PRODUCT_IDEAS.md).
 
 ---
@@ -56,16 +56,17 @@ cd apps/api && npx prisma generate
 
 ---
 
-## Phase 3b — Magic features (after 3a beta)
+## Phase 3b — Magic features ✅ COMPLETE (no Apple account)
 
-| ID | Item | Depends on |
-|----|------|------------|
-| P3b-03 | Plaid refund radar | Plaid production keys |
-| P3b-04 | EasyPost carrier tracking | EasyPost account |
-| P3b-06 | Smart snooze suggestions | Analytics baseline |
-| P3b-07 | Return label PDF vault | Email attachment parsing |
-| P3b-01 | Google Wallet production | Google service account |
-| P3b-01 | Apple Wallet production | **Apple Developer** |
+| ID | Item | Status |
+|----|------|--------|
+| UX-05 | Bottom tab nav (Home · Add · Settings) | ✅ Done |
+| P3b-04 | Tracking timeline + manual tracking # | ✅ Done |
+| P3b-03 | Plaid refund radar (connect bank UI) | ✅ Done — needs dev build + Plaid env |
+| MKT-06 | Invite friends share | ✅ Done |
+| P3b-07 | Return label URL vault (from email) | ✅ Done |
+| P3b-01 | Google Wallet production | ✅ Docs — [GOOGLE_WALLET_SETUP.md](./GOOGLE_WALLET_SETUP.md) |
+| P3b-01 | Apple Wallet production | ⏸ **Apple Developer** |
 
 ---
 
@@ -100,3 +101,12 @@ cd apps/web && npm start
 | 2026-06-09 | Phase 3a core: stats, archive, trust screen, landing, merchant links, parser feedback |
 | 2026-06-09 | Smoke fixes: snooze, manual returns, nav, delete return |
 | 2026-06-09 | Push test API, deep links, skeleton, celebration, smart snooze, settings notifications |
+| 2026-06-09 | Phase 3b: tabs, tracking API/UI, Plaid connect, invite share |
+| 2026-06-09 | Expo owner ahmed5145, EAS docs, return label URL, Google Wallet docs |
+
+### Migration 005
+
+```bash
+psql $DATABASE_URL -f db/migrations/005_return_label_url.sql
+cd apps/api && npx prisma generate
+```
