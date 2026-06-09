@@ -14,6 +14,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { User } from '@prisma/client';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
+import { AddTrackingDto } from './dto/add-tracking.dto';
 import { SnoozeDto } from './dto/snooze.dto';
 import { ReturnsService } from './returns.service';
 
@@ -88,6 +89,21 @@ export class ReturnsController {
     @Body() body: SnoozeDto,
   ) {
     return this.returnsService.snooze(user.id, id, body.mode ?? '24h');
+  }
+
+  @Post(':id/tracking')
+  @ApiOperation({ summary: 'Add shipment tracking number' })
+  async addTracking(
+    @CurrentUser() user: User,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: AddTrackingDto,
+  ) {
+    return this.returnsService.addTracking(
+      user.id,
+      id,
+      body.tracking_number,
+      body.carrier,
+    );
   }
 
   @Post(':id/report-misparsed')

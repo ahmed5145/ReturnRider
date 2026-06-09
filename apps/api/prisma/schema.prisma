@@ -154,6 +154,7 @@ model Return {
   walletAppleSerial      String?      @unique @map("wallet_apple_serial")
   walletGoogleObjectId   String?      @unique @map("wallet_google_object_id")
   trackingNumber         String?      @map("tracking_number")
+  returnLabelUrl         String?      @map("return_label_url")
   carrier                String?
   droppedOffAt           DateTime?    @map("dropped_off_at") @db.Timestamptz
   deliveredToMerchantAt  DateTime?    @map("delivered_to_merchant_at") @db.Timestamptz

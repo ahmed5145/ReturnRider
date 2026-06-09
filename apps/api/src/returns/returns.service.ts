@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ReturnStatus } from '@prisma/client';
 import { getMerchantReturnUrl } from '../common/merchant-portals';
+import { guessCarrier } from '../common/carrier-guess';
 import { computeSnoozeDeadline } from '../common/snooze-utils';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -317,6 +318,8 @@ export class ReturnsService {
       expectedRefundAmount: unknown;
       snoozeCount: number;
       trackingNumber: string | null;
+      returnLabelUrl: string | null;
+      carrier: string | null;
       walletAppleSerial: string | null;
       walletGoogleObjectId: string | null;
       order: { merchantName: string; externalOrderId: string };
@@ -325,6 +328,14 @@ export class ReturnsService {
         actualAmount: unknown;
         userConfirmedAt: Date | null;
       } | null;
+      trackingLogs?: Array<{
+        status: string;
+        statusDetail: string | null;
+        carrier: string;
+        eventAt: Date;
+        locationCity: string | null;
+        locationState: string | null;
+      }>;
     },
   ) {
     const now = new Date();
@@ -346,6 +357,18 @@ export class ReturnsService {
       snoozes_remaining: Math.max(0, 2 - ret.snoozeCount),
       has_wallet_pass: !!(ret.walletAppleSerial || ret.walletGoogleObjectId),
       tracking_number: ret.trackingNumber,
+      return_label_url: ret.returnLabelUrl,
+      carrier: ret.carrier,
+      tracking_events: (ret.trackingLogs ?? []).map((log) => ({
+        status: log.status,
+        status_detail: log.statusDetail,
+        carrier: log.carrier,
+        event_at: log.eventAt.toISOString(),
+        location:
+          log.locationCity || log.locationState
+            ? [log.locationCity, log.locationState].filter(Boolean).join(', ')
+            : null,
+      })),
       order: {
         merchant_name: ret.order.merchantName,
         external_order_id: ret.order.externalOrderId,
@@ -463,6 +486,46 @@ export class ReturnsService {
     await this.notificationScheduler.cancelForReturn(returnId);
     await this.prisma.return.delete({ where: { id: returnId } });
     return { deleted: true };
+  }
+
+  async addTracking(
+    userId: string,
+    returnId: string,
+    trackingNumber: string,
+    carrier?: string,
+  ) {
+    const ret = await this.loadReturn(userId, returnId);
+    const resolvedCarrier = carrier ?? guessCarrier(trackingNumber);
+
+    const updated = await this.prisma.return.update({
+      where: { id: returnId },
+      data: {
+        trackingNumber,
+        carrier: resolvedCarrier,
+        status: ret.status === 'ready_to_ship' ? 'in_transit' : ret.status,
+        droppedOffAt: ret.droppedOffAt ?? new Date(),
+      },
+      include: {
+        order: true,
+        refundStatus: true,
+        trackingLogs: { orderBy: { eventAt: 'desc' } },
+      },
+    });
+
+    await this.prisma.trackingLog.create({
+      data: {
+        returnId,
+        trackingNumber,
+        carrier: resolvedCarrier,
+        status: 'in_transit',
+        statusDetail: 'Tracking added by user',
+        eventAt: new Date(),
+        provider: 'manual',
+        providerEventId: `manual-${Date.now()}`,
+      },
+    });
+
+    return this.formatReturnDetail(updated);
   }
 
   async reportMisparsed(

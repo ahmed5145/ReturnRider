@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ReturnRider",
-    "owner": "ahmedm1",
+    "owner": "ahmed5145",
     "slug": "returnrider",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -31,6 +31,12 @@
           "cameraPermission": "Allow ReturnRider to photograph receipts for manual returns."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "bb385e3a-8199-4ff2-a65a-6f6a4826983a"
+      }
+    }
   }
 }

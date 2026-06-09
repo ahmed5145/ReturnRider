@@ -30,14 +30,10 @@ export default function RootLayout() {
           contentStyle: { backgroundColor: '#0f1419' },
         }}
       >
-        <Stack.Screen name="index" options={{ title: 'Dashboard', headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="returns" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="settings"
-          options={{ title: 'Settings', headerBackTitle: 'Dashboard' }}
-        />
         <Stack.Screen
           name="add-return"
           options={{ title: 'Add return', headerBackTitle: 'Dashboard' }}

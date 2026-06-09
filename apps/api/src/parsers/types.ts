@@ -11,6 +11,7 @@ export interface ParsedReceipt {
   trackingNumbers?: string[];
   qrPayload?: string;
   qrFormat?: string;
+  returnLabelUrl?: string;
   confidence: number;
 }
 

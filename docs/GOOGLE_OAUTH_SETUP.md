@@ -50,7 +50,7 @@ Also enable Gmail API once: **APIs & Services** → **Library** → search **Gma
 Add the URI shown on the app’s **Connect Gmail** screen. For Expo Go on a phone, that is usually:
 
 ```
-https://auth.expo.io/@ahmedm1/returnrider
+https://auth.expo.io/@ahmed5145/returnrider
 ```
 
 If you test in a browser, also add:
@@ -144,7 +144,7 @@ Until then, push registration is skipped safely — Gmail and returns still work
 
 Expo Go cannot use `returnrider://` with a Google **Web** client. The app uses:
 
-1. **Google redirect** (add to Google Console): `https://auth.expo.io/@ahmedm1/returnrider`
+1. **Google redirect** (add to Google Console): `https://auth.expo.io/@ahmed5145/returnrider`
 2. **App return** (shown on Connect Gmail, do **not** add to Google): `exp://…` from Expo
 
 The app opens Google's login through Expo's auth proxy (`…/start?authUrl=…&returnUrl=…`). If you tap Allow and the app says "cancelled or failed", restart Metro with `-c` after pulling the latest code — older builds opened Google directly and could not return to Expo Go on iOS.

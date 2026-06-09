@@ -1,12 +1,13 @@
 /** @type {import('expo/config').ExpoConfig} */
 const base = require('./app.json').expo;
 
+// Env overrides app.json; app.json is written by `eas init` (account ahmed5145).
 const EAS_PROJECT_ID =
-  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? 'aa737750-09c8-4cf8-969c-121feefc9597';
+  process.env.EXPO_PUBLIC_EAS_PROJECT_ID ?? base.extra?.eas?.projectId;
 
 module.exports = () => ({
   ...base,
-  owner: 'ahmedm1',
+  owner: 'ahmed5145',
   ios: {
     ...base.ios,
     infoPlist: {
@@ -17,6 +18,7 @@ module.exports = () => ({
   extra: {
     ...base.extra,
     eas: {
+      ...base.extra?.eas,
       projectId: EAS_PROJECT_ID,
     },
   },

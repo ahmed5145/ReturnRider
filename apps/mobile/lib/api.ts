@@ -142,7 +142,22 @@ export const api = {
         user_confirmed_at: string | null;
       } | null;
       merchant_return_url: string | null;
+      return_label_url: string | null;
+      carrier: string | null;
+      tracking_events: Array<{
+        status: string;
+        status_detail: string | null;
+        carrier: string;
+        event_at: string;
+        location: string | null;
+      }>;
     }>(`/returns/${id}`),
+
+  addTracking: (id: string, tracking_number: string, carrier?: string) =>
+    request(`/returns/${id}/tracking`, {
+      method: 'POST',
+      body: JSON.stringify({ tracking_number, carrier }),
+    }),
 
   reportMisparsed: (
     id: string,
@@ -273,6 +288,12 @@ export const api = {
     }),
 
   plaidLinkToken: () => request<{ link_token: string }>('/plaid/link-token', { method: 'POST' }),
+
+  plaidExchange: (public_token: string) =>
+    request<{ item_id: string }>('/plaid/exchange', {
+      method: 'POST',
+      body: JSON.stringify({ public_token }),
+    }),
 
   plaidSync: () =>
     request<{ synced: number; matches: unknown[] }>('/plaid/sync', {

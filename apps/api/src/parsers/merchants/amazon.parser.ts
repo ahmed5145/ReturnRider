@@ -1,6 +1,12 @@
 import { isPromotionalOrNonReturnEmail } from '../commerce-classifier';
 import { ParseInput, ParsedReceipt } from '../types';
-import { extractAmount, extractOrderId, stripHtml, addReturnWindow } from './parser-utils';
+import {
+  extractAmount,
+  extractOrderId,
+  extractReturnLabelUrl,
+  stripHtml,
+  addReturnWindow,
+} from './parser-utils';
 
 export function parseAmazon(input: ParseInput): ParsedReceipt | null {
   if (isPromotionalOrNonReturnEmail(input.from, input.subject)) {
@@ -23,6 +29,7 @@ export function parseAmazon(input: ParseInput): ParsedReceipt | null {
   }
 
   const total = extractAmount(text);
+  const labelUrl = isReturn ? extractReturnLabelUrl(input.htmlBody, text) : undefined;
 
   return {
     merchantName: 'Amazon',
@@ -33,6 +40,7 @@ export function parseAmazon(input: ParseInput): ParsedReceipt | null {
     itemSummary: input.subject.replace(/^Amazon\.com\s*[-:]?\s*/i, '').slice(0, 120),
     returnWindowDays: isReturn ? 30 : undefined,
     returnDeadlineAt: isReturn ? addReturnWindow(new Date(), 30) : undefined,
+    returnLabelUrl: labelUrl ?? undefined,
     confidence: isReturn ? 0.92 : 0.88,
   };
 }

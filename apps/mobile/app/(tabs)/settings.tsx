@@ -5,15 +5,17 @@ import {
   FlatList,
   Linking,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Link, router, Stack, useFocusEffect } from 'expo-router';
-import { legalUrl } from '../lib/api-base';
-import { api, ensureAuthToken } from '../lib/api';
-import { registerForPushNotifications } from '../lib/notifications';
-import { colors } from '../lib/theme';
+import { Link, useFocusEffect } from 'expo-router';
+import { legalUrl } from '../../lib/api-base';
+import { api, ensureAuthToken } from '../../lib/api';
+import { connectPlaidBank } from '../../lib/plaid-link';
+import { registerForPushNotifications } from '../../lib/notifications';
+import { colors } from '../../lib/theme';
 
 interface LinkedEmail {
   id: string;
@@ -35,6 +37,7 @@ export default function SettingsScreen() {
   const [hasPush, setHasPush] = useState(false);
   const [hasPlaid, setHasPlaid] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  const [plaidLoading, setPlaidLoading] = useState(false);
 
   const load = async () => {
     await ensureAuthToken();
@@ -74,7 +77,7 @@ export default function SettingsScreen() {
     if (!token) {
       Alert.alert(
         'Notifications need dev build',
-        'Expo Go cannot receive push on SDK 53+. Build an Android dev client (free) — see docs/DEV_BUILD.md.',
+        'Expo Go cannot receive push on SDK 53+. Use your Android dev build APK.',
       );
     }
   };
@@ -93,6 +96,26 @@ export default function SettingsScreen() {
     } finally {
       setPushLoading(false);
     }
+  };
+
+  const linkBank = async () => {
+    setPlaidLoading(true);
+    try {
+      const ok = await connectPlaidBank();
+      if (ok) {
+        Alert.alert('Bank linked', 'We\'ll scan for refunds and match them to your returns.');
+        await load();
+      }
+    } finally {
+      setPlaidLoading(false);
+    }
+  };
+
+  const inviteFriends = async () => {
+    await Share.share({
+      message:
+        'I use ReturnRider to track return deadlines and never miss a refund. Check it out!',
+    });
   };
 
   const formatLastSync = (iso: string | null | undefined) => {
@@ -116,6 +139,13 @@ export default function SettingsScreen() {
   const header = (
     <>
       <Text style={styles.title}>Settings</Text>
+
+      <Text style={styles.section}>Invite</Text>
+      <Pressable style={styles.inviteCard} onPress={inviteFriends}>
+        <Text style={styles.inviteTitle}>Protect a friend&apos;s refund</Text>
+        <Text style={styles.hint}>Share ReturnRider — help someone never miss a deadline.</Text>
+      </Pressable>
+
       <Text style={styles.section}>Privacy & data</Text>
       <View style={styles.privacyCard}>
         <Text style={styles.privacyItem}>✓ Read-only Gmail — shopping mail only</Text>
@@ -128,13 +158,14 @@ export default function SettingsScreen() {
           <Text style={styles.legalLink}>Terms of Service →</Text>
         </Pressable>
       </View>
+
       <Text style={styles.section}>Notifications</Text>
       <View style={styles.notifCard}>
         <Text style={styles.notifStatus}>
           {hasPush ? '✓ Push reminders enabled' : 'Push reminders off'}
         </Text>
         <Text style={styles.hint}>
-          T-7, T-3, and T-24h alerts before deadlines. Requires Android dev build (not Expo Go).
+          T-7, T-3, and T-24h alerts. Requires Android dev build (not Expo Go).
         </Text>
         <View style={styles.row}>
           {!hasPush && (
@@ -155,51 +186,54 @@ export default function SettingsScreen() {
       <Text style={styles.section}>Refund radar (optional)</Text>
       <View style={styles.notifCard}>
         <Text style={styles.notifStatus}>
-          {hasPlaid ? '✓ Bank linked for auto-refund detection' : 'Not connected'}
+          {hasPlaid ? '✓ Bank linked' : 'Not connected'}
         </Text>
         <Text style={styles.hint}>
-          Plaid auto-matches refunds to returns. Native bank link ships with dev build + Plaid keys.
+          Auto-detect when refunds hit your account. Uses Plaid sandbox in dev.
         </Text>
-        {hasPlaid && (
-          <Pressable
-            onPress={async () => {
-              try {
-                const res = await api.plaidSync();
-                Alert.alert(
-                  'Sync complete',
-                  `Scanned ${res.synced} transactions · ${res.matches?.length ?? 0} refund matches.`,
-                );
-              } catch (e) {
-                Alert.alert('Sync failed', e instanceof Error ? e.message : 'Try again');
-              }
-            }}
-          >
-            <Text style={styles.syncLink}>Sync refunds now</Text>
-          </Pressable>
-        )}
+        <View style={styles.row}>
+          {!hasPlaid && (
+            <Pressable onPress={linkBank} disabled={plaidLoading}>
+              <Text style={styles.syncLink}>
+                {plaidLoading ? 'Opening…' : 'Connect bank'}
+              </Text>
+            </Pressable>
+          )}
+          {hasPlaid && (
+            <Pressable
+              onPress={async () => {
+                try {
+                  const res = await api.plaidSync();
+                  Alert.alert(
+                    'Sync complete',
+                    `Scanned ${res.synced} txs · ${res.matches?.length ?? 0} matches.`,
+                  );
+                } catch (e) {
+                  Alert.alert('Sync failed', e instanceof Error ? e.message : 'Try again');
+                }
+              }}
+            >
+              <Text style={styles.syncLink}>Sync refunds now</Text>
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
-        Read-only shopping mail. Disconnect anytime — we never sell your data.
+        Read-only shopping mail. Disconnect anytime.
       </Text>
     </>
   );
 
   const footer = (
-    <>
-      <Link href="/onboarding/connect" style={styles.addBtn}>
-        <Text style={styles.addBtnText}>+ Add another email</Text>
-      </Link>
-      <Pressable style={styles.back} onPress={() => router.replace('/')}>
-        <Text style={styles.backText}>Back to dashboard</Text>
-      </Pressable>
-    </>
+    <Link href="/onboarding/connect" style={styles.addBtn}>
+      <Text style={styles.addBtnText}>+ Add another email</Text>
+    </Link>
   );
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Settings' }} />
       <FlatList
         data={emails}
         keyExtractor={(e) => e.id}
@@ -245,7 +279,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scroll: { padding: 24, paddingTop: 16, paddingBottom: 40 },
+  scroll: { padding: 24, paddingTop: 56, paddingBottom: 24 },
   privacyCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,
@@ -255,6 +289,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     gap: 6,
   },
+  inviteCard: {
+    backgroundColor: colors.accentSoft,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  inviteTitle: { color: colors.text, fontWeight: '700', fontSize: 15 },
   privacyItem: { color: colors.textMuted, fontSize: 13, lineHeight: 20 },
   notifCard: {
     backgroundColor: colors.bgCard,
@@ -268,8 +311,8 @@ const styles = StyleSheet.create({
   notifStatus: { color: colors.text, fontWeight: '600', fontSize: 14 },
   legalLink: { color: colors.accent, fontWeight: '600', fontSize: 14, marginTop: 8 },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
-  title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 24 },
-  section: { color: colors.text, fontWeight: '600', fontSize: 16 },
+  title: { fontSize: 24, fontWeight: '700', color: colors.text, marginBottom: 16 },
+  section: { color: colors.text, fontWeight: '600', fontSize: 16, marginTop: 4 },
   hint: { color: colors.textMuted, fontSize: 13, marginBottom: 12, marginTop: 4, lineHeight: 18 },
   card: {
     backgroundColor: colors.bgCard,
@@ -293,8 +336,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
+    marginBottom: 16,
   },
   addBtnText: { color: colors.accent, fontWeight: '600' },
-  back: { marginTop: 24, alignItems: 'center' },
-  backText: { color: colors.textDim },
 });

@@ -4,7 +4,12 @@ import {
   extractGenericOrderId,
 } from '../commerce-classifier';
 import { ParseInput, ParsedReceipt } from '../types';
-import { extractAmount, stripHtml, addReturnWindow } from './parser-utils';
+import {
+  extractAmount,
+  extractReturnLabelUrl,
+  stripHtml,
+  addReturnWindow,
+} from './parser-utils';
 
 export function parseGeneric(input: ParseInput): ParsedReceipt | null {
   if (!isCommerceEmail(input.from, input.subject)) {
@@ -31,6 +36,7 @@ export function parseGeneric(input: ParseInput): ParsedReceipt | null {
     itemSummary: input.subject.slice(0, 120),
     returnWindowDays: 30,
     returnDeadlineAt: addReturnWindow(new Date(), 30),
+    returnLabelUrl: extractReturnLabelUrl(input.htmlBody, text) ?? undefined,
     confidence: 0.8,
   };
 }

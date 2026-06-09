@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
@@ -10,14 +9,14 @@ import {
   View,
 } from 'react-native';
 import { Link, router, useFocusEffect } from 'expo-router';
-import { trackEvent } from '../lib/analytics';
-import { api, ensureAuthToken } from '../lib/api';
-import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../lib/celebration';
-import { registerForPushNotifications } from '../lib/notifications';
-import { colors } from '../lib/theme';
-import { DashboardSkeleton } from '../components/DashboardSkeleton';
-import { getMerchantEmoji } from '../lib/merchant-icons';
-import { formatDaysRemaining, getUrgencyColor } from '../lib/urgency';
+import { DashboardSkeleton } from '../../components/DashboardSkeleton';
+import { trackEvent } from '../../lib/analytics';
+import { api, ensureAuthToken } from '../../lib/api';
+import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../../lib/celebration';
+import { getMerchantEmoji } from '../../lib/merchant-icons';
+import { registerForPushNotifications } from '../../lib/notifications';
+import { colors } from '../../lib/theme';
+import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
 
 type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
 
@@ -132,12 +131,8 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
-      <View style={styles.header}>
-        <Text style={styles.title}>ReturnRider</Text>
-        <Link href="/settings">
-          <Text style={styles.settings}>Settings</Text>
-        </Link>
-      </View>
+
+      <Text style={styles.title}>ReturnRider</Text>
 
       {inboxSyncing && (
         <View style={styles.syncChip}>
@@ -149,10 +144,11 @@ export default function HomeScreen() {
         <Link href={`/returns/${nextDeadline.id}`} asChild>
           <Pressable style={styles.deadlineBanner}>
             <Text style={styles.deadlineBannerTitle}>
-              Next up: {nextDeadline.merchant_name} — {formatDaysRemaining(nextDeadline.days_remaining)}
+              Next up: {nextDeadline.merchant_name} —{' '}
+              {formatDaysRemaining(nextDeadline.days_remaining)}
             </Text>
             <Text style={styles.deadlineBannerSub}>
-              Tap for details · Push reminders need the ReturnRider app (not Expo Go)
+              Tap for details · Push reminders need the dev build app
             </Text>
           </Pressable>
         </Link>
@@ -163,9 +159,7 @@ export default function HomeScreen() {
           <Text style={styles.heroLabel}>Money protected</Text>
           <View style={styles.heroRow}>
             <View style={styles.heroStat}>
-              <Text style={styles.heroAmount}>
-                ${stats.at_risk_amount.toFixed(0)}
-              </Text>
+              <Text style={styles.heroAmount}>${stats.at_risk_amount.toFixed(0)}</Text>
               <Text style={styles.heroSub}>at risk</Text>
             </View>
             <View style={styles.heroDivider} />
@@ -212,12 +206,7 @@ export default function HomeScreen() {
             style={[styles.filterChip, statusFilter === f.id && styles.filterChipActive]}
             onPress={() => setStatusFilter(f.id)}
           >
-            <Text
-              style={[
-                styles.filterText,
-                statusFilter === f.id && styles.filterTextActive,
-              ]}
-            >
+            <Text style={[styles.filterText, statusFilter === f.id && styles.filterTextActive]}>
               {f.label}
             </Text>
           </Pressable>
@@ -230,7 +219,11 @@ export default function HomeScreen() {
         data={returns}
         keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor={colors.accent} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+            tintColor={colors.accent}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyBox}>
@@ -245,24 +238,21 @@ export default function HomeScreen() {
               <>
                 <Text style={styles.emptyTitle}>Scanning your inboxes</Text>
                 <Text style={styles.empty}>
-                  We&apos;re reading the last 90 days of shopping mail. Returns and review items
-                  will appear here shortly.
+                  We&apos;re reading shopping mail. Returns will appear here shortly.
                 </Text>
               </>
             ) : linkedCount > 0 ? (
               <>
                 <Text style={styles.emptyTitle}>No returns on your dashboard yet</Text>
                 <Text style={styles.empty}>
-                  Sync finished but we didn&apos;t auto-detect return deadlines. Check review
-                  items above, or add a return manually.
+                  Check review items or add a return manually.
                 </Text>
               </>
             ) : (
               <>
                 <Text style={styles.emptyTitle}>No returns yet</Text>
                 <Text style={styles.empty}>
-                  Connect Gmail to auto-import from receipts, or add a return manually if you
-                  have a paper receipt.
+                  Connect Gmail or add a return from the + tab.
                 </Text>
                 <Link href="/onboarding/connect" style={styles.emptyLink}>
                   Connect email
@@ -295,8 +285,7 @@ export default function HomeScreen() {
                   style={[
                     styles.meta,
                     {
-                      color:
-                        statusFilter === 'completed' ? colors.success : borderColor,
+                      color: statusFilter === 'completed' ? colors.success : borderColor,
                     },
                   ]}
                 >
@@ -314,25 +303,13 @@ export default function HomeScreen() {
           );
         }}
       />
-
-      <View style={styles.actions}>
-        <Link href="/add-return" style={styles.actionBtn}>
-          <Text style={styles.actionText}>+ Add return</Text>
-        </Link>
-        <Link href="/scan-receipt" style={[styles.actionBtn, styles.actionSecondary]}>
-          <Text style={styles.actionText}>Scan receipt</Text>
-        </Link>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, paddingTop: 60, backgroundColor: colors.bg },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.bg },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: '700', color: colors.text },
-  settings: { color: colors.accent, fontSize: 14 },
+  container: { flex: 1, padding: 20, paddingTop: 56, backgroundColor: colors.bg },
+  title: { fontSize: 28, fontWeight: '700', color: colors.text, marginBottom: 4 },
   syncChip: {
     alignSelf: 'flex-start',
     backgroundColor: colors.accentSoft,
@@ -408,16 +385,6 @@ const styles = StyleSheet.create({
   empty: { color: colors.textMuted, textAlign: 'center', lineHeight: 22, marginBottom: 16 },
   emptyLink: { color: colors.accent, marginVertical: 6, fontSize: 15 },
   error: { color: '#ff6b6b', marginBottom: 12 },
-  actions: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: colors.accent,
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  actionSecondary: { backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.accent },
-  actionText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   deadlineBanner: {
     backgroundColor: 'rgba(245, 166, 35, 0.12)',
     borderRadius: 12,

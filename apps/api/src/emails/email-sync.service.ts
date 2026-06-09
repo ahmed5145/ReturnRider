@@ -368,7 +368,9 @@ export class EmailSyncService {
     }
 
     const status =
-      parsed.qrPayload || options?.forceReturn ? 'ready_to_ship' : 'draft';
+      parsed.qrPayload || parsed.returnLabelUrl || options?.forceReturn
+        ? 'ready_to_ship'
+        : 'draft';
 
     const created = await this.prisma.return.create({
       data: {
@@ -381,6 +383,7 @@ export class EmailSyncService {
         returnWindowDays: parsed.returnWindowDays,
         qrPayload: parsed.qrPayload,
         qrFormat: parsed.qrFormat,
+        returnLabelUrl: parsed.returnLabelUrl,
       },
       include: { order: true },
     });

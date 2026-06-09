@@ -28,6 +28,7 @@ export default function ReturnDetailScreen() {
   const [walletHintShown, setWalletHintShown] = useState(false);
   const [showRefundCelebration, setShowRefundCelebration] = useState(false);
   const [celebrationAmount, setCelebrationAmount] = useState(0);
+  const [trackingInput, setTrackingInput] = useState('');
 
   const load = async () => {
     if (!id) return;
@@ -70,6 +71,21 @@ export default function ReturnDetailScreen() {
         ? res.google_save_url ?? 'Pass link generated'
         : 'Pass generated. Production builds open Apple Wallet directly.',
     );
+  };
+
+  const saveTracking = async () => {
+    if (!id || !trackingInput.trim()) return;
+    setActing(true);
+    try {
+      await api.addTracking(id, trackingInput.trim());
+      await load();
+      setTrackingInput('');
+      Alert.alert('Tracking saved', 'We\'ll update status when the carrier reports movement.');
+    } catch (e) {
+      Alert.alert('Could not save', e instanceof Error ? e.message : 'Try again');
+    } finally {
+      setActing(false);
+    }
   };
 
   const snooze = async (mode: SnoozeMode = '24h') => {
@@ -246,8 +262,19 @@ export default function ReturnDetailScreen() {
           </Text>
         )}
         {data.tracking_number && (
-          <Text style={styles.timelineItem}>Tracking: {data.tracking_number}</Text>
+          <Text style={styles.timelineItem}>
+            {data.carrier?.toUpperCase() ?? 'Ship'} · {data.tracking_number}
+          </Text>
         )}
+        {data.tracking_events?.map((ev, i) => (
+          <Text key={`${ev.event_at}-${i}`} style={styles.timelineItem}>
+            {ev.status.replace(/_/g, ' ')}
+            {ev.status_detail ? ` — ${ev.status_detail}` : ''}
+            {' · '}
+            {new Date(ev.event_at).toLocaleDateString()}
+            {ev.location ? ` · ${ev.location}` : ''}
+          </Text>
+        ))}
         {data.refund_status?.user_confirmed_at && (
           <Text style={[styles.timelineItem, { color: colors.success }]}>
             Refund confirmed{' '}
@@ -258,19 +285,47 @@ export default function ReturnDetailScreen() {
         )}
       </View>
 
-      {!isComplete && data.merchant_return_url && (
+      {!isComplete && (data.merchant_return_url || data.return_label_url) && (
         <>
           <Text style={styles.section}>Start return</Text>
-          <Pressable style={styles.merchantBtn} onPress={openMerchantPortal}>
-            <Text style={styles.merchantBtnText}>
-              Open {data.merchant_name} orders →
-            </Text>
-          </Pressable>
+          {data.return_label_url && (
+            <Pressable
+              style={styles.merchantBtn}
+              onPress={() => Linking.openURL(data.return_label_url!)}
+            >
+              <Text style={styles.merchantBtnText}>Open return label →</Text>
+            </Pressable>
+          )}
+          {data.merchant_return_url && (
+            <Pressable style={styles.merchantBtn} onPress={openMerchantPortal}>
+              <Text style={styles.merchantBtnText}>
+                Open {data.merchant_name} orders →
+              </Text>
+            </Pressable>
+          )}
         </>
       )}
 
       {!isComplete && (
         <>
+          <Text style={styles.section}>Shipment</Text>
+          {!data.tracking_number && (
+            <>
+              <Text style={styles.hint}>Dropped off? Add your tracking number to follow the package.</Text>
+              <TextInput
+                style={styles.input}
+                value={trackingInput}
+                onChangeText={setTrackingInput}
+                placeholder="1Z999AA10123456784"
+                placeholderTextColor={colors.textDim}
+                autoCapitalize="characters"
+              />
+              <Pressable style={styles.secondaryBtn} onPress={saveTracking} disabled={acting}>
+                <Text style={styles.secondaryBtnText}>Save tracking number</Text>
+              </Pressable>
+            </>
+          )}
+
           <Text style={styles.section}>Drop-off</Text>
           <Text style={styles.hint}>
             Wallet pass = one swipe at UPS or store. No need to reconnect Gmail.

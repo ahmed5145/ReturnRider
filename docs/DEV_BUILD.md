@@ -35,8 +35,11 @@ If you have an Android phone, you can build and install a dev client for **free*
 
 ```cmd
 cd apps\mobile
+npm install
 npx eas-cli build --profile development --platform android
 ```
+
+> **Note:** If you pulled new code (Plaid SDK, etc.) after starting a build, **run a fresh build** after `npm install` so native modules are included.
 
 Download the `.apk` from the EAS dashboard and install on your device. Then:
 
@@ -76,6 +79,19 @@ npm run start:dev-client
 ```
 
 Gmail connect, settings, and returns all work in Expo Go. Push notifications need a dev build.
+
+### EAS build stuck on "Build queued…"
+
+This is **normal** on the free tier — queue times are often **15–60+ minutes**.
+
+1. Press **Ctrl+C** — the build keeps running on Expo servers.
+2. Check status: [expo.dev/accounts/ahmed5145/projects/returnrider/builds](https://expo.dev/accounts/ahmed5145/projects/returnrider/builds) (see [EAS_SETUP.md](./EAS_SETUP.md))
+3. Or run: `npx eas-cli build:list` (same folder as `apps/mobile`)
+4. When status is **Finished**, download the `.apk` and install on your Android phone.
+
+If it stays queued for **2+ hours**, cancel on the dashboard and re-run the build.
+
+---
 
 ### Test push after installing dev build
 

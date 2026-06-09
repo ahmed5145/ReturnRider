@@ -19,7 +19,7 @@ export function getGoogleRedirectUri(): string {
   }
 
   if (isExpoGo()) {
-    const owner = Constants.expoConfig?.owner ?? 'ahmedm1';
+    const owner = Constants.expoConfig?.owner ?? 'ahmed5145';
     const slug = Constants.expoConfig?.slug ?? 'returnrider';
     return `https://auth.expo.io/@${owner}/${slug}`;
   }

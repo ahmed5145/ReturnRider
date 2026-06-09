@@ -21,6 +21,19 @@ export function stripHtml(html: string): string {
     .trim();
 }
 
+export function extractReturnLabelUrl(html: string, text: string): string | null {
+  const combined = `${html} ${text}`;
+  const patterns = [
+    /href=["'](https?:\/\/[^"']*(?:return|label|rma|ship)[^"']*)["']/i,
+    /(https?:\/\/[^\s<>"']+(?:return|label|rma)[^\s<>"']*)/i,
+  ];
+  for (const pattern of patterns) {
+    const m = combined.match(pattern);
+    if (m?.[1] && m[1].length < 500) return m[1].replace(/&amp;/g, '&');
+  }
+  return null;
+}
+
 export function addReturnWindow(orderDate: Date, days: number): Date {
   const d = new Date(orderDate);
   d.setDate(d.getDate() + days);

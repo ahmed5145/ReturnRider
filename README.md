@@ -35,6 +35,7 @@ Seed demo data: `cd apps/api && npx ts-node src/seed/seed.ts`
 
 API: http://localhost:3000  
 Docs: http://localhost:3000/api/docs  
+EAS builds: https://expo.dev/accounts/ahmed5145/projects/returnrider/builds (see `docs/EAS_SETUP.md`)
 Legal: http://localhost:3000/legal/terms · http://localhost:3000/legal/privacy
 
 ### Mobile (no Docker)
