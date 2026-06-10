@@ -20,6 +20,7 @@ import { getInviteShareMessage, getReferralLink } from '../../lib/invite';
 import { openUrl } from '../../lib/open-url';
 import { connectPlaidBank } from '../../lib/plaid-link';
 import { registerForPushNotifications } from '../../lib/notifications';
+import { getSyncHealth } from '../../lib/sync-health';
 import { useTheme } from '../../lib/ThemeProvider';
 import type { ThemeColors } from '../../lib/themes';
 
@@ -258,9 +259,24 @@ export default function SettingsScreen() {
     );
   }
 
+  const inboxSyncing = emails.some((e) => e.status === 'syncing');
+  const syncHealth = getSyncHealth(emails, inboxSyncing);
+
   const header = (
     <>
       <Text style={styles.title}>Settings</Text>
+
+      {syncHealth && (
+        <View
+          style={[
+            styles.syncHealthBanner,
+            syncHealth.level === 'error' && styles.syncHealthBannerError,
+          ]}
+        >
+          <Text style={styles.syncHealthTitle}>{syncHealth.title}</Text>
+          <Text style={styles.syncHealthDetail}>{syncHealth.detail}</Text>
+        </View>
+      )}
 
       <Text style={styles.section}>Appearance</Text>
       <View style={styles.themeRow}>
@@ -485,6 +501,20 @@ function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { padding: 24, paddingTop: 56, paddingBottom: 24 },
+  syncHealthBanner: {
+    backgroundColor: 'rgba(245, 166, 35, 0.12)',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#f5a623',
+  },
+  syncHealthBannerError: {
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderColor: '#ff6b6b',
+  },
+  syncHealthTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
+  syncHealthDetail: { color: colors.textMuted, fontSize: 13, marginTop: 6, lineHeight: 18 },
   privacyCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,

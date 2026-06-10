@@ -118,6 +118,21 @@ API uses `origin: true` (all origins) — fine for staging. Tighten with `CORS_O
 
 Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_ENABLED=false` if debugging.
 
+### Keep the API awake (free tier)
+
+Render **free** web services spin down after ~15 minutes idle. While asleep, BullMQ sync and scheduled push jobs do not run.
+
+**Option A — Render cron (in `render.yaml`):** After deploy, confirm the `api-keep-warm` cron job is enabled in the Render dashboard. It hits `GET /health` every 14 minutes.
+
+**Option B — UptimeRobot (free, no Render cron needed):**
+
+1. Create account at [uptimerobot.com](https://uptimerobot.com)
+2. Add monitor → **HTTP(s)** → URL `https://returnrider-api.onrender.com/health`
+3. Interval **5 minutes**
+4. Save — cold starts should stop within a day of monitoring
+
+**Option C — Paid always-on:** Upgrade the `returnrider-api` service to **Starter** on Render.
+
 ## Local vs staging
 
 | | Local | Staging |

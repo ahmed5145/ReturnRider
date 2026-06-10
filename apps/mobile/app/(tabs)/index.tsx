@@ -21,6 +21,7 @@ import { registerForPushNotifications } from '../../lib/notifications';
 import { tryApplyPendingReferral } from '../../lib/pending-referral';
 import { useTheme } from '../../lib/ThemeProvider';
 import type { ThemeColors } from '../../lib/themes';
+import { getSyncHealth, type LinkedEmailSyncInfo } from '../../lib/sync-health';
 import { formatDaysRemaining } from '../../lib/urgency';
 
 type StatusFilter = 'all_active' | 'ready_to_ship' | 'awaiting_refund' | 'completed';
@@ -65,6 +66,7 @@ export default function HomeScreen() {
   const [reviewPending, setReviewPending] = useState(0);
   const [inboxSyncing, setInboxSyncing] = useState(false);
   const [linkedCount, setLinkedCount] = useState(0);
+  const [linkedEmails, setLinkedEmails] = useState<LinkedEmailSyncInfo[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
   const [showCelebration, setShowCelebration] = useState(false);
   const [stats, setStats] = useState<ReturnStats | null>(null);
@@ -86,6 +88,7 @@ export default function HomeScreen() {
       setReviewPending(me.review_pending_count ?? 0);
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
+      setLinkedEmails(me.linked_emails ?? []);
       void api.syncTimezone(getDeviceTimezone()).catch(() => {});
       void registerForPushNotifications().catch(() => {});
       const statsPromise = api.getReturnStats();
@@ -146,6 +149,7 @@ export default function HomeScreen() {
   }
 
   const campaign = getActiveCampaign();
+  const syncHealth = getSyncHealth(linkedEmails, inboxSyncing);
 
   return (
     <View style={styles.container}>
@@ -177,6 +181,20 @@ export default function HomeScreen() {
         <View style={styles.syncChip}>
           <Text style={styles.syncChipText}>Scanning shopping mail…</Text>
         </View>
+      )}
+
+      {syncHealth && (
+        <Link href="/(tabs)/settings" asChild>
+          <Pressable
+            style={[
+              styles.syncHealthBanner,
+              syncHealth.level === 'error' && styles.syncHealthBannerError,
+            ]}
+          >
+            <Text style={styles.syncHealthTitle}>{syncHealth.title}</Text>
+            <Text style={styles.syncHealthDetail}>{syncHealth.detail}</Text>
+          </Pressable>
+        </Link>
       )}
 
       {nextUp && nextUp.days_remaining != null && nextUp.days_remaining <= 7 && (
@@ -364,6 +382,20 @@ function createStyles(colors: ThemeColors) {
     marginTop: 12,
   },
   syncChipText: { color: colors.accent, fontSize: 12, fontWeight: '600' },
+  syncHealthBanner: {
+    backgroundColor: 'rgba(245, 166, 35, 0.12)',
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#f5a623',
+  },
+  syncHealthBannerError: {
+    backgroundColor: 'rgba(255, 107, 107, 0.1)',
+    borderColor: '#ff6b6b',
+  },
+  syncHealthTitle: { color: colors.text, fontWeight: '600', fontSize: 14 },
+  syncHealthDetail: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 17 },
   heroCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 16,

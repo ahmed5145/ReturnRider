@@ -36,7 +36,7 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Parser tests
+      - name: API tests (parsers + timezone)
         run: npm run test
 
   mobile:

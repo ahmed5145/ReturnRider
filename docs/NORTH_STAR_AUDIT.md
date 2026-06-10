@@ -123,7 +123,7 @@ flowchart LR
 
 ---
 
-### 5. Render free tier sleeps
+### 5. Render free tier sleeps — ✅ mitigated (Sprint B)
 
 **Problem:** API + BullMQ stop when Render spins down. Sync and delayed push jobs slip until wake.
 
@@ -296,9 +296,9 @@ Update this table as sprints ship.
 | A | User timezone scheduling | ✅ |
 | A | Slim onboarding | ✅ |
 | A | Review queue hybrid | ✅ |
-| B | Android APK + push E2E | ⬜ |
-| B | Render always-on | ⬜ |
-| B | Sync health UI | ⬜ |
+| B | Android APK + push E2E | ⬜ (manual — [DEV_BUILD.md](./DEV_BUILD.md)) |
+| B | Render always-on / keep-warm | ✅ (`render.yaml` cron + [STAGING_DEPLOY.md](./STAGING_DEPLOY.md)) |
+| B | Sync health UI | ✅ |
 | C | Gmail watch / faster sync | ⬜ |
 | C | OAuth verification | ⬜ |
 | C | Production hardening | ⬜ |
