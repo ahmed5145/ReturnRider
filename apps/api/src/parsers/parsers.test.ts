@@ -96,6 +96,7 @@ describe('parseReceipt', () => {
     const emailDate = new Date('2024-01-15T12:00:00.000Z');
     const result = parseReceipt(sample({ from: 'orders@target.com', emailDate }));
     assert.ok(result);
+    assert.ok(result.orderDate);
     assert.equal(result.orderDate.getTime(), emailDate.getTime());
     const windowDays = result.returnWindowDays ?? 30;
     const expected = addReturnWindow(emailDate, windowDays);

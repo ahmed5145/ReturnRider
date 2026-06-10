@@ -122,7 +122,15 @@ Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_E
 
 Render **free** web services spin down after ~15 minutes idle. While asleep, BullMQ sync and scheduled push jobs do not run.
 
-**Option A — Render cron (in `render.yaml`):** After deploy, confirm the `api-keep-warm` cron job is enabled in the Render dashboard. It hits `GET /health` every 14 minutes.
+**Option A — Render cron (in `render.yaml`):**
+
+1. Open [dashboard.render.com](https://dashboard.render.com) → your **ReturnRider** blueprint (or the `returnrider-api` service).
+2. After a deploy that includes `render.yaml`, look in the left sidebar for **Cron Jobs** (or a second service named **`api-keep-warm`**).
+3. If you do **not** see it: **Blueprints** → **Sync** / **Apply** so Render picks up the new cron entry from `render.yaml`.
+4. Open **`api-keep-warm`** → **Logs**. After ~14 minutes you should see successful `curl` output against `/health`.
+5. Optional check: leave the app closed for 20+ minutes, then open the dashboard — the “sync is behind” banner should **not** appear if keep-warm is working.
+
+> Render cron may require a paid plan on some accounts. If no Cron Jobs section appears, use **Option B** (UptimeRobot) — it works the same way.
 
 **Option B — UptimeRobot (free, no Render cron needed):**
 
