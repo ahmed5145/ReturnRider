@@ -1,4 +1,9 @@
-import { isPromotionalOrNonReturnEmail } from '../commerce-classifier';
+import {
+  classifyEmailIntent,
+  intentCreatesReturn,
+  isPromotionalOrNonReturnEmail,
+} from '../commerce-classifier';
+import { scoreParseConfidence } from '../parse-scoring';
 import { ParseInput, ParsedReceipt } from '../types';
 import {
   extractAmount,
@@ -20,27 +25,40 @@ export function parseAmazon(input: ParseInput): ParsedReceipt | null {
   ]);
   if (!orderId) return null;
 
-  const isReturn = /return|return label|rma/i.test(input.subject);
-  const isShipped = /shipped|delivery|out for delivery/i.test(input.subject);
-  const isOrderConfirm = /order|ordered|confirmation|receipt/i.test(input.subject);
-
-  if (!isReturn && !isOrderConfirm && !isShipped) {
+  const intent = classifyEmailIntent(input.subject, text);
+  if (intent === 'shipped' || intent === 'other') {
     return null;
   }
 
+  if (!intentCreatesReturn(intent)) {
+    return null;
+  }
+
+  const isReturn = intent === 'return_label' || intent === 'refund';
   const total = extractAmount(text);
   const labelUrl = isReturn ? extractReturnLabelUrl(input.htmlBody, text) : undefined;
+  const orderDate = new Date();
+
+  const confidence = scoreParseConfidence({
+    intent,
+    merchantSpecific: true,
+    hasOrderId: true,
+    hasAmount: total != null,
+    hasLabelUrl: !!labelUrl,
+  });
 
   return {
     merchantName: 'Amazon',
     merchantDomain: 'amazon.com',
     externalOrderId: orderId,
+    orderDate,
     totalAmount: total,
     currency: 'USD',
     itemSummary: input.subject.replace(/^Amazon\.com\s*[-:]?\s*/i, '').slice(0, 120),
-    returnWindowDays: isReturn ? 30 : undefined,
-    returnDeadlineAt: isReturn ? addReturnWindow(new Date(), 30) : undefined,
+    returnWindowDays: 30,
+    returnDeadlineAt: addReturnWindow(orderDate, 30),
     returnLabelUrl: labelUrl ?? undefined,
-    confidence: isReturn ? 0.92 : 0.88,
+    emailIntent: intent,
+    confidence,
   };
 }

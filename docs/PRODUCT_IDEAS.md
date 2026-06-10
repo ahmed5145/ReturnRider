@@ -214,6 +214,7 @@ Phase 4 — Growth
 | 2026-06-09 | MKT-01/02/06/07, UX-02 | Referral program, campaign banner, refund share card, haptics, press kit |
 | 2026-06-04 | UX-04/06/10, Phase 4d docs | Swipe snooze, theme toggle, font scaling, OAuth/Plaid/ASO guides |
 | 2026-06-09 | UX-07, Plaid staging | Onboarding % protected, health flags, Render Plaid keys |
+| 2026-06-09 | Parser tuning sprint | Intent scoring, promo filter, shipped skip, tests — [PARSER_TUNING.md](./PARSER_TUNING.md) |
 | — | P3a-04 Android push | APK via EAS — emulator or friend's phone if no Android device |
 | — | P3b-01/02 Apple | Deferred — no Apple Developer account |
 | 2026-06-09 | Migration 006 | Referral columns on Neon |

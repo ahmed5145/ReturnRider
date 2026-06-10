@@ -19,8 +19,15 @@ const PARSERS: { domain: string; parse: MerchantParser }[] = [
   { domain: 'bestbuy.com', parse: parseBestBuy },
   { domain: 'gap.com', parse: parseGap },
   { domain: 'oldnavy.com', parse: parseGap },
+  { domain: 'bananarepublic.com', parse: parseGap },
   { domain: 'homedepot.com', parse: parseGeneric },
   { domain: 'costco.com', parse: parseGeneric },
+  { domain: 'kohls.com', parse: parseGeneric },
+  { domain: 'macys.com', parse: parseGeneric },
+  { domain: 'wayfair.com', parse: parseGeneric },
+  { domain: 'ebay.com', parse: parseGeneric },
+  { domain: 'etsy.com', parse: parseGeneric },
+  { domain: 'myshopify.com', parse: parseGeneric },
 ];
 
 export function parseReceipt(input: ParseInput): ParsedReceipt | null {

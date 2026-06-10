@@ -4,6 +4,8 @@ import { Queue } from 'bullmq';
 import { Prisma } from '@prisma/client';
 import { CryptoService } from '../common/crypto.service';
 import {
+  classifyEmailIntent,
+  intentCreatesReturn,
   isCommerceEmail,
   isReturnRelatedSubject,
 } from '../parsers/commerce-classifier';
@@ -128,6 +130,7 @@ export class EmailSyncService {
         confidence_reason: explainParseConfidence(
           Number(item.confidence),
           item.merchantGuess,
+          null,
         ),
         status: item.status,
         created_at: item.createdAt.toISOString(),
@@ -352,9 +355,12 @@ export class EmailSyncService {
       },
     });
 
+    const intent = parsed.emailIntent ?? classifyEmailIntent(parsed.itemSummary ?? '');
     const isReturnEmail = /return|refund|rma/i.test(parsed.itemSummary ?? '');
     const shouldCreateReturn =
-      options?.forceReturn || isReturnEmail || !!parsed.returnDeadlineAt;
+      options?.forceReturn ||
+      isReturnEmail ||
+      (intentCreatesReturn(intent) && !!parsed.returnDeadlineAt);
     if (!shouldCreateReturn) {
       return false;
     }

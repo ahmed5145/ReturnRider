@@ -1,3 +1,5 @@
+import type { EmailIntent } from './commerce-classifier';
+
 export interface ParsedReceipt {
   merchantName: string;
   merchantDomain?: string;
@@ -12,6 +14,7 @@ export interface ParsedReceipt {
   qrPayload?: string;
   qrFormat?: string;
   returnLabelUrl?: string;
+  emailIntent?: EmailIntent;
   confidence: number;
 }
 

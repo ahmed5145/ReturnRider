@@ -1,8 +1,12 @@
 import {
+  classifyEmailIntent,
+  extractGenericOrderId,
+  fromKnownRetailer,
+  intentCreatesReturn,
   isCommerceEmail,
   isReturnRelatedSubject,
-  extractGenericOrderId,
 } from '../commerce-classifier';
+import { scoreParseConfidence } from '../parse-scoring';
 import { ParseInput, ParsedReceipt } from '../types';
 import {
   extractAmount,
@@ -11,32 +15,64 @@ import {
   addReturnWindow,
 } from './parser-utils';
 
+/** Generic parser — always below auto-create threshold unless user confirms in review. */
+const GENERIC_AUTO_THRESHOLD_CAP = 0.84;
+
 export function parseGeneric(input: ParseInput): ParsedReceipt | null {
   if (!isCommerceEmail(input.from, input.subject)) {
     return null;
   }
-  if (!isReturnRelatedSubject(input.subject)) {
+
+  const text = stripHtml(input.htmlBody) || input.textBody;
+  const intent = classifyEmailIntent(input.subject, text);
+
+  if (intent === 'shipped') {
     return null;
   }
 
-  const text = stripHtml(input.htmlBody) || input.textBody;
+  if (!isReturnRelatedSubject(input.subject) && intent === 'other') {
+    return null;
+  }
+
+  if (!intentCreatesReturn(intent) && !isReturnRelatedSubject(input.subject)) {
+    return null;
+  }
+
   const orderId = extractGenericOrderId(text);
   if (!orderId) return null;
 
   const domainMatch = input.from.match(/@([\w.-]+)/);
   const merchantDomain = domainMatch?.[1];
   const merchantName = merchantDomain?.split('.')[0] ?? 'Unknown';
+  const displayName =
+    merchantName.charAt(0).toUpperCase() + merchantName.slice(1).replace(/-/g, ' ');
+
+  const totalAmount = extractAmount(text);
+  const returnLabelUrl = extractReturnLabelUrl(input.htmlBody, text) ?? undefined;
+  const orderDate = new Date();
+
+  let confidence = scoreParseConfidence({
+    intent: intent === 'other' ? 'return_label' : intent,
+    merchantSpecific: fromKnownRetailer(input.from),
+    hasOrderId: true,
+    hasAmount: totalAmount != null,
+    hasLabelUrl: !!returnLabelUrl,
+  });
+
+  confidence = Math.min(confidence, GENERIC_AUTO_THRESHOLD_CAP);
 
   return {
-    merchantName: merchantName.charAt(0).toUpperCase() + merchantName.slice(1),
+    merchantName: displayName,
     merchantDomain,
     externalOrderId: orderId,
-    totalAmount: extractAmount(text),
+    orderDate,
+    totalAmount,
     currency: 'USD',
     itemSummary: input.subject.slice(0, 120),
     returnWindowDays: 30,
-    returnDeadlineAt: addReturnWindow(new Date(), 30),
-    returnLabelUrl: extractReturnLabelUrl(input.htmlBody, text) ?? undefined,
-    confidence: 0.8,
+    returnDeadlineAt: addReturnWindow(orderDate, 30),
+    returnLabelUrl,
+    emailIntent: intent === 'other' ? 'return_label' : intent,
+    confidence,
   };
 }

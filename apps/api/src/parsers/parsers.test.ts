@@ -1,0 +1,111 @@
+import { describe, it } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  classifyEmailIntent,
+  isCommerceEmail,
+  isPromotionalOrNonReturnEmail,
+} from './commerce-classifier';
+import { scoreParseConfidence } from './parse-scoring';
+import { parseReceipt } from './merchants';
+import type { ParseInput } from './types';
+
+function sample(overrides: Partial<ParseInput>): ParseInput {
+  return {
+    from: 'orders@target.com',
+    subject: 'Thanks for your order',
+    htmlBody: '<p>Order #1234567890 Total $42.99</p>',
+    textBody: 'Order #1234567890 Total $42.99',
+    ...overrides,
+  };
+}
+
+describe('commerce-classifier', () => {
+  it('rejects generic noreply without retailer domain', () => {
+    assert.equal(
+      isCommerceEmail('noreply@random-marketing.com', 'Your order summary'),
+      false,
+    );
+  });
+
+  it('accepts known retailer sender', () => {
+    assert.equal(isCommerceEmail('auto-confirm@target.com', 'Order confirmed'), true);
+  });
+
+  it('blocks promotional subjects', () => {
+    assert.equal(
+      isPromotionalOrNonReturnEmail('deals@target.com', '25% off — members only sale'),
+      true,
+    );
+  });
+
+  it('classifies shipped vs order confirm', () => {
+    assert.equal(classifyEmailIntent('Your package has shipped'), 'shipped');
+    assert.equal(classifyEmailIntent('Thank you for your order'), 'order_confirm');
+    assert.equal(classifyEmailIntent('Your return label is ready'), 'return_label');
+  });
+});
+
+describe('parseReceipt', () => {
+  it('parses Target order confirmation with deadline', () => {
+    const result = parseReceipt(sample({ from: 'orders@target.com' }));
+    assert.ok(result);
+    assert.equal(result.merchantName, 'Target');
+    assert.equal(result.emailIntent, 'order_confirm');
+    assert.ok(result.returnDeadlineAt);
+    assert.ok(result.confidence >= 0.85);
+  });
+
+  it('skips Target shipped-only notification', () => {
+    const result = parseReceipt(
+      sample({
+        subject: 'Your package has shipped',
+        htmlBody: '<p>Order #1234567890 tracking 1Z999</p>',
+        textBody: 'Order #1234567890 tracking 1Z999',
+      }),
+    );
+    assert.equal(result, null);
+  });
+
+  it('skips Amazon promotional mail', () => {
+    const result = parseReceipt(
+      sample({
+        from: 'deals@amazon.com',
+        subject: 'Deal of the day — 40% off',
+        htmlBody: 'Order #111-2222222-3333333',
+        textBody: 'Order #111-2222222-3333333',
+      }),
+    );
+    assert.equal(result, null);
+  });
+
+  it('caps generic parser below auto-create threshold', () => {
+    const result = parseReceipt(
+      sample({
+        from: 'returns@unknown-shop.com',
+        subject: 'Your return label',
+        htmlBody: 'Order number: ABC123456789',
+        textBody: 'Order number: ABC123456789 Refund $10',
+      }),
+    );
+    assert.ok(result);
+    assert.ok(result.confidence <= 0.84);
+  });
+
+  it('scores return labels higher than order confirms', () => {
+    const returnScore = scoreParseConfidence({
+      intent: 'return_label',
+      merchantSpecific: true,
+      hasOrderId: true,
+      hasAmount: true,
+      hasLabelUrl: true,
+    });
+    const orderScore = scoreParseConfidence({
+      intent: 'order_confirm',
+      merchantSpecific: true,
+      hasOrderId: true,
+      hasAmount: true,
+      hasLabelUrl: false,
+    });
+    assert.ok(returnScore > orderScore);
+  });
+});
