@@ -197,6 +197,7 @@ Phase 4 — Growth
 - [STAGING_DEPLOY.md](./STAGING_DEPLOY.md) — Render deploy  
 - [DEV_BUILD.md](./DEV_BUILD.md) — Expo dev client for push  
 - [ROADMAP_PHASE4.md](./ROADMAP_PHASE4.md) — Trust, growth, UX polish  
+- [NORTH_STAR_AUDIT.md](./NORTH_STAR_AUDIT.md) — Set-and-forget audit & sprint plan  
 - [PLAID_SETUP.md](./PLAID_SETUP.md) · [PLAY_STORE_ASO.md](./PLAY_STORE_ASO.md)  
 
 ---

@@ -2,7 +2,7 @@
 
 Single source of truth for product decisions, architecture, gaps, and roadmap.
 
-See also: [openapi.yaml](./openapi.yaml), [compliance/GOOGLE_OAUTH_COMPLIANCE.md](./compliance/GOOGLE_OAUTH_COMPLIANCE.md), [../db/migrations/](../db/migrations/), [../legal/](../legal/).
+See also: [openapi.yaml](./openapi.yaml), [NORTH_STAR_AUDIT.md](./NORTH_STAR_AUDIT.md) (set-and-forget gaps & sprints), [compliance/GOOGLE_OAUTH_COMPLIANCE.md](./compliance/GOOGLE_OAUTH_COMPLIANCE.md), [../db/migrations/](../db/migrations/), [../legal/](../legal/).
 
 ## Value proposition
 

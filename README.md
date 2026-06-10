@@ -62,3 +62,13 @@ npx expo start -c
 ## Environment
 
 See [.env.example](.env.example) for required secrets (Gmail OAuth, Plaid, EasyPost, wallet certs).
+
+## Docs
+
+| Doc | Purpose |
+|-----|---------|
+| [docs/NORTH_STAR_AUDIT.md](docs/NORTH_STAR_AUDIT.md) | **Set-and-forget audit** — gaps, sprints A/B/C, smoke checklist |
+| [docs/BLUEPRINT.md](docs/BLUEPRINT.md) | Architecture & phased delivery |
+| [docs/PARSER_TUNING.md](docs/PARSER_TUNING.md) | Email parser rules & tests |
+| [docs/STAGING_DEPLOY.md](docs/STAGING_DEPLOY.md) | Render staging |
+| [docs/DEV_BUILD.md](docs/DEV_BUILD.md) | Android APK for push |
