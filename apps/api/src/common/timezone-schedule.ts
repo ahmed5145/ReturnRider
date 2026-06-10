@@ -4,7 +4,7 @@ import { DateTime } from 'luxon';
 export function isValidTimezone(timeZone: string): boolean {
   try {
     Intl.DateTimeFormat(undefined, { timeZone });
-    return DateTime.now().setZone(timeZone).isValid;
+    return true;
   } catch {
     return false;
   }
