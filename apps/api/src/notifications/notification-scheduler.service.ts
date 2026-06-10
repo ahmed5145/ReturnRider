@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { Return, User } from '@prisma/client';
+import { atLocalTimeOnSameDay } from '../common/timezone-schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface NotificationTrigger {
@@ -65,6 +66,7 @@ export class NotificationSchedulerService {
     const deadline = returnRecord.returnDeadlineAt.getTime();
     const now = Date.now();
     const discoveryGap = deadline - now;
+    const timeZone = user.timezone || 'America/New_York';
 
     for (const trigger of NOTIFICATION_TRIGGERS) {
       if (trigger.triggerId === 'RET_T7' && discoveryGap < 7 * 24 * 60 * 60 * 1000) {
@@ -73,11 +75,11 @@ export class NotificationSchedulerService {
 
       let scheduledAt: Date;
       if (trigger.triggerId === 'RET_OVERDUE') {
-        scheduledAt = new Date(deadline + 24 * 60 * 60 * 1000);
-        scheduledAt.setHours(10, 0, 0, 0);
+        const dayAfter = new Date(deadline + 24 * 60 * 60 * 1000);
+        scheduledAt = atLocalTimeOnSameDay(dayAfter, 10, 0, timeZone);
       } else {
-        scheduledAt = new Date(deadline - trigger.offsetMs);
-        scheduledAt.setHours(9, 0, 0, 0);
+        const triggerDay = new Date(deadline - trigger.offsetMs);
+        scheduledAt = atLocalTimeOnSameDay(triggerDay, 9, 0, timeZone);
       }
 
       if (scheduledAt.getTime() <= now + 60 * 60 * 1000) {

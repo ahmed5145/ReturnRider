@@ -13,7 +13,7 @@
 | Download & connect | Gmail OAuth once | ✅ Works (Expo Go + staging) | OAuth in **Testing** mode; verification needed for public users |
 | Forget about app | No ongoing chores | ⚠️ Partial | Review queue, manual flows, and optional features pull users back in |
 | Background detection | Automatic, timely | ⚠️ Partial | Server polls Gmail every **15 min**; Render **free tier sleeps** |
-| Reminders | Push before deadline | ⚠️ Built but fragile | **No push in Expo Go (iOS)**; needs dev/production build; timezone logic weak |
+| Reminders | Push before deadline | ⚠️ Built but fragile | **No push in Expo Go (iOS)**; needs dev/production build; timezone scheduling ✅ (Sprint A) |
 
 **Verdict:** Server-side Gmail ingest + BullMQ push scheduling match the vision. **Deadline accuracy**, **push delivery**, and **onboarding friction** still break true “set and forget.”
 
@@ -33,10 +33,10 @@ flowchart LR
   end
 
   subgraph today [Today]
-    B2[4-slide welcome] --> C2[4-step checklist]
+    B2[2-slide welcome] --> C2[2-step checklist]
     C2 --> D2[Maybe review queue]
     D2 --> E2[Sync if Render awake]
-    E2 --> F2[Deadlines from sync date]
+    E2 --> F2[Deadlines from email date]
     F2 --> G2[Push only on dev APK]
   end
 ```
@@ -62,7 +62,7 @@ flowchart LR
 
 ## P0 — Core gaps (blocks “forget about app”)
 
-### 1. Wrong return deadlines on backfill
+### 1. Wrong return deadlines on backfill — ✅ fixed (Sprint A)
 
 **Problem:** Parsers set `orderDate = new Date()` (sync time). Gmail message `internalDate` is not used.
 
@@ -91,7 +91,7 @@ flowchart LR
 
 ---
 
-### 3. Notification time not in user’s timezone
+### 3. Notification time not in user’s timezone — ✅ fixed (Sprint A)
 
 **Problem:** `User.timezone` exists (default `America/New_York`) but scheduler uses `setHours(9,0,0,0)` on server `Date` without TZ conversion.
 
@@ -105,7 +105,7 @@ flowchart LR
 
 ---
 
-### 4. Review queue breaks autonomy
+### 4. Review queue breaks autonomy — ✅ improved (Sprint A)
 
 **Problem:** Low-confidence parses → `parse_review_queue`. Dashboard banner requires user to review.
 
@@ -292,10 +292,10 @@ Update this table as sprints ship.
 
 | Sprint | Item | Status |
 |--------|------|--------|
-| A | internalDate → deadlines | ⬜ |
-| A | User timezone scheduling | ⬜ |
-| A | Slim onboarding | ⬜ |
-| A | Review queue hybrid | ⬜ |
+| A | internalDate → deadlines | ✅ |
+| A | User timezone scheduling | ✅ |
+| A | Slim onboarding | ✅ |
+| A | Review queue hybrid | ✅ |
 | B | Android APK + push E2E | ⬜ |
 | B | Render always-on | ⬜ |
 | B | Sync health UI | ⬜ |
@@ -309,7 +309,7 @@ Update this table as sprints ship.
 
 ## Quick reference — what’s left (one paragraph)
 
-For the **one-liner on iPhone + Expo Go today:** ~**70%** on detection (Gmail + parser), ~**30%** on reminders (push blocked), ~**50%** on accuracy (deadline dates + timezone). **Must-do before “done”:** Sprint A (dates + timezone + slim onboarding + review policy), Sprint B (Android build + push + always-on API). **Can wait:** store accounts, OAuth verification for wide beta, Plaid, Wallet, growth features.
+For the **one-liner on iPhone + Expo Go today:** ~**75%** on detection (Gmail + parser + hybrid review), ~**30%** on reminders (push blocked on Expo Go), ~**85%** on accuracy (email-date deadlines + timezone scheduling — Sprint A ✅). **Must-do before “done”:** Sprint B (Android build + push + always-on API). **Can wait:** store accounts, OAuth verification for wide beta, Plaid, Wallet, growth features.
 
 ---
 

@@ -13,6 +13,7 @@ import {
   extractReturnLabelUrl,
   stripHtml,
   addReturnWindow,
+  resolveOrderDate,
 } from './parser-utils';
 
 /** Generic parser — always below auto-create threshold unless user confirms in review. */
@@ -49,7 +50,7 @@ export function parseGeneric(input: ParseInput): ParsedReceipt | null {
 
   const totalAmount = extractAmount(text);
   const returnLabelUrl = extractReturnLabelUrl(input.htmlBody, text) ?? undefined;
-  const orderDate = new Date();
+  const orderDate = resolveOrderDate(input.emailDate);
 
   let confidence = scoreParseConfidence({
     intent: intent === 'other' ? 'return_label' : intent,
@@ -73,6 +74,7 @@ export function parseGeneric(input: ParseInput): ParsedReceipt | null {
     returnDeadlineAt: addReturnWindow(orderDate, 30),
     returnLabelUrl,
     emailIntent: intent === 'other' ? 'return_label' : intent,
+    parserTier: 'generic',
     confidence,
   };
 }

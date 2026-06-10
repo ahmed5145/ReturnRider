@@ -10,6 +10,15 @@ import { UsersService } from './users.service';
 class PushTokenDto {
   @IsString()
   expo_push_token!: string;
+
+  @IsOptional()
+  @IsString()
+  timezone?: string;
+}
+
+class TimezoneDto {
+  @IsString()
+  timezone!: string;
 }
 
 class OnboardingDto {
@@ -45,8 +54,14 @@ export class UsersController {
 
   @Post('push-token')
   async pushToken(@CurrentUser() user: User, @Body() dto: PushTokenDto) {
-    await this.usersService.setPushToken(user.id, dto.expo_push_token);
+    await this.usersService.setPushToken(user.id, dto.expo_push_token, dto.timezone);
     return { registered: true };
+  }
+
+  @Post('timezone')
+  async timezone(@CurrentUser() user: User, @Body() dto: TimezoneDto) {
+    await this.usersService.setTimezone(user.id, dto.timezone);
+    return { updated: true };
   }
 
   @Post('test-push')

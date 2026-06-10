@@ -123,11 +123,32 @@ export class UsersService {
     };
   }
 
-  async setPushToken(userId: string, token: string) {
+  async setPushToken(userId: string, token: string, timezone?: string) {
     await this.prisma.user.update({
       where: { id: userId },
-      data: { expoPushToken: token },
+      data: {
+        expoPushToken: token,
+        ...(timezone ? this.timezoneUpdate(timezone) : {}),
+      },
     });
+  }
+
+  async setTimezone(userId: string, timezone: string) {
+    const update = this.timezoneUpdate(timezone);
+    if (!update) return;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: update,
+    });
+  }
+
+  private timezoneUpdate(timezone: string): { timezone: string } | null {
+    try {
+      Intl.DateTimeFormat(undefined, { timeZone: timezone });
+      return { timezone };
+    } catch {
+      return null;
+    }
   }
 
   async completeOnboarding(userId: string, displayName?: string) {

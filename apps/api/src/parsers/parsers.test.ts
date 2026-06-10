@@ -6,6 +6,7 @@ import {
   isPromotionalOrNonReturnEmail,
 } from './commerce-classifier';
 import { scoreParseConfidence } from './parse-scoring';
+import { addReturnWindow, parseGmailInternalDate } from './parser-utils';
 import { parseReceipt } from './merchants';
 import type { ParseInput } from './types';
 
@@ -89,6 +90,39 @@ describe('parseReceipt', () => {
     );
     assert.ok(result);
     assert.ok(result.confidence <= 0.84);
+  });
+
+  it('uses Gmail emailDate for order deadlines on backfill', () => {
+    const emailDate = new Date('2024-01-15T12:00:00.000Z');
+    const result = parseReceipt(sample({ from: 'orders@target.com', emailDate }));
+    assert.ok(result);
+    assert.equal(result.orderDate.getTime(), emailDate.getTime());
+    const windowDays = result.returnWindowDays ?? 30;
+    const expected = addReturnWindow(emailDate, windowDays);
+    assert.equal(result.returnDeadlineAt?.getTime(), expected.getTime());
+  });
+
+  it('parses Gmail internalDate milliseconds', () => {
+    const d = parseGmailInternalDate('1705320000000');
+    assert.ok(d);
+    assert.equal(d.getTime(), 1705320000000);
+  });
+
+  it('marks dedicated merchants for auto-create', () => {
+    const result = parseReceipt(sample({ from: 'orders@target.com' }));
+    assert.equal(result?.parserTier, 'merchant');
+  });
+
+  it('marks generic parser for review queue', () => {
+    const result = parseReceipt(
+      sample({
+        from: 'returns@unknown-shop.com',
+        subject: 'Your return label',
+        htmlBody: 'Order number: ABC123456789',
+        textBody: 'Order number: ABC123456789 Refund $10',
+      }),
+    );
+    assert.equal(result?.parserTier, 'generic');
   });
 
   it('scores return labels higher than order confirms', () => {

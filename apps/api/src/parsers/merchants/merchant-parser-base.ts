@@ -10,6 +10,7 @@ import {
   extractAmount,
   extractOrderId,
   extractReturnLabelUrl,
+  resolveOrderDate,
   stripHtml,
 } from './parser-utils';
 
@@ -71,7 +72,7 @@ export function parseMerchantReceipt(
   }
   itemSummary = itemSummary.slice(0, 120);
 
-  const orderDate = new Date();
+  const orderDate = resolveOrderDate(input.emailDate);
 
   return {
     merchantName: config.merchantName,
@@ -85,6 +86,7 @@ export function parseMerchantReceipt(
     returnDeadlineAt: addReturnWindow(orderDate, returnWindowDays),
     returnLabelUrl,
     emailIntent: intent,
+    parserTier: 'merchant',
     confidence,
   };
 }

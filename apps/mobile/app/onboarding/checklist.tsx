@@ -1,7 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,12 +10,11 @@ import {
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
 import { api, ensureAuthToken, formatNetworkError } from '../../lib/api';
-import { registerForPushNotifications } from '../../lib/notifications';
-import { connectPlaidBank } from '../../lib/plaid-link';
+import { isExpoGo, registerForPushNotifications } from '../../lib/notifications';
 import { useTheme } from '../../lib/ThemeProvider';
 import type { ThemeColors } from '../../lib/themes';
 
-const SETUP_STEPS = 4;
+const SETUP_STEPS = 2;
 
 export default function ChecklistScreen() {
   const { colors } = useTheme();
@@ -26,9 +24,7 @@ export default function ChecklistScreen() {
   const [returns, setReturns] = useState(0);
   const [reviewPending, setReviewPending] = useState(0);
   const [pushDone, setPushDone] = useState(false);
-  const [plaidDone, setPlaidDone] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
-  const [plaidLoading, setPlaidLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(true);
 
   const refreshProgress = useCallback(async () => {
@@ -40,7 +36,6 @@ export default function ChecklistScreen() {
       setReturns(me.returns_count);
       setReviewPending(me.review_pending_count ?? 0);
       setPushDone(me.has_push_token);
-      setPlaidDone(me.has_plaid_linked);
     } catch (e) {
       console.warn('Checklist refresh failed:', formatNetworkError(e));
     } finally {
@@ -61,54 +56,34 @@ export default function ChecklistScreen() {
     setPushLoading(false);
   };
 
-  const linkBank = async () => {
-    setPlaidLoading(true);
-    try {
-      const ok = await connectPlaidBank();
-      if (ok) {
-        await refreshProgress();
-      }
-    } catch (e) {
-      Alert.alert('Bank linking', e instanceof Error ? e.message : 'Try again');
-    } finally {
-      setPlaidLoading(false);
-    }
-  };
-
   const finish = async () => {
     await api.completeOnboarding();
     trackEvent('onboarding_completed');
     router.replace('/');
   };
 
-  const scanDone = linked > 0 && !refreshing;
-  const stepsDone =
-    (linked > 0 ? 1 : 0) +
-    (scanDone ? 1 : 0) +
-    (pushDone ? 1 : 0) +
-    (plaidDone ? 1 : 0);
-
-  const scanStatusText = (() => {
-    if (!linked) return 'Connect Gmail first — we scan order and return emails automatically.';
+  const gmailBody = (() => {
+    if (!linked) {
+      return 'Read-only access to order and return emails. We scan the last 90 days automatically.';
+    }
     if (refreshing) return 'Checking your inbox…';
     if (reviewPending > 0) {
-      return `We found ${reviewPending} possible return${reviewPending === 1 ? '' : 's'} — review them on your dashboard after setup.`;
+      return `${reviewPending} uncertain receipt${reviewPending === 1 ? '' : 's'} queued for review — you can confirm them on the dashboard later.`;
     }
     if (returns > 0) {
-      return `${returns} return${returns === 1 ? '' : 's'} ready on your dashboard after setup.`;
+      return `${returns} return${returns === 1 ? '' : 's'} found so far. More appear as we sync in the background.`;
     }
-    return 'Scan complete. More returns may appear as we read your shopping mail.';
+    return 'Connected — scanning shopping mail in the background.';
   })();
+
+  const stepsDone = (linked > 0 ? 1 : 0) + (pushDone ? 1 : 0);
   const percent = Math.round((stepsDone / SETUP_STEPS) * 100);
 
   const protectionHint = (() => {
     if (refreshing) return null;
-    if (percent === 100) return "100% protected — you're all set!";
-    if (!plaidDone && stepsDone >= 2) {
-      return `${percent}% protected — connect bank for refund radar?`;
-    }
-    if (stepsDone === 0) return '0% — start with Gmail to auto-find returns';
-    return `${percent}% protected — finish the steps below`;
+    if (linked === 0) return 'Connect Gmail to start auto-tracking returns';
+    if (percent === 100) return "You're set — we'll remind you before deadlines";
+    return 'Gmail connected — enable reminders so you never miss a window';
   })();
 
   return (
@@ -120,9 +95,9 @@ export default function ChecklistScreen() {
         showsVerticalScrollIndicator
       >
         <Text style={styles.eyebrow}>Almost there</Text>
-        <Text style={styles.title}>Set up in under 2 minutes</Text>
+        <Text style={styles.title}>Two quick steps</Text>
         <Text style={styles.sub}>
-          One-time setup. Connect once, then returns appear automatically.
+          Connect once, then returns and deadlines appear automatically.
         </Text>
 
         {connected && (
@@ -135,82 +110,61 @@ export default function ChecklistScreen() {
         )}
 
         <View style={styles.progressCard}>
-        <Text style={styles.progressText}>
-          {refreshing ? 'Updating…' : `${percent}% protected · ${stepsDone} of ${SETUP_STEPS}`}
-        </Text>
-        {protectionHint && <Text style={styles.progressHint}>{protectionHint}</Text>}
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${percent}%` }]} />
-        </View>
-      </View>
-
-      <View style={[styles.item, linked > 0 && styles.itemDone]}>
-        <Text style={styles.check}>{linked > 0 ? '✓' : '1'}</Text>
-        <View style={styles.flex}>
-          <Text style={styles.itemTitle}>Connect Gmail</Text>
-          <Text style={styles.itemBody}>
-            {linked > 0
-              ? `${linked} inbox${linked === 1 ? '' : 'es'} connected — syncing receipts in the background.`
-              : 'Auto-import orders & return QR codes (read-only).'}
+          <Text style={styles.progressText}>
+            {refreshing ? 'Updating…' : `${stepsDone} of ${SETUP_STEPS} complete`}
           </Text>
-          <Link href="/onboarding/connect" style={styles.link}>
-            {linked > 0 ? 'Add another inbox →' : 'Connect Gmail →'}
-          </Link>
+          {protectionHint && <Text style={styles.progressHint}>{protectionHint}</Text>}
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${percent}%` }]} />
+          </View>
         </View>
-      </View>
 
-      <View style={[styles.item, scanDone && styles.itemDone]}>
-        <Text style={styles.check}>{scanDone ? '✓' : '2'}</Text>
-        <View style={styles.flex}>
-          <Text style={styles.itemTitle}>Finding your returns</Text>
-          <Text style={styles.itemBody}>{scanStatusText}</Text>
+        <View style={[styles.item, linked > 0 && styles.itemDone]}>
+          <Text style={styles.check}>{linked > 0 ? '✓' : '1'}</Text>
+          <View style={styles.flex}>
+            <Text style={styles.itemTitle}>Connect Gmail</Text>
+            <Text style={styles.itemBody}>{gmailBody}</Text>
+            <Link href="/onboarding/connect" style={styles.link}>
+              {linked > 0 ? 'Add another inbox →' : 'Connect Gmail →'}
+            </Link>
+          </View>
         </View>
-      </View>
 
-      <View style={[styles.item, pushDone && styles.itemDone]}>
-        <Text style={styles.check}>{pushDone ? '✓' : '3'}</Text>
-        <View style={styles.flex}>
-          <Text style={styles.itemTitle}>Turn on reminders</Text>
-          <Text style={styles.itemBody}>Push alerts before deadlines—not inbox spam.</Text>
-          {!pushDone && (
-            <Pressable onPress={enablePush} disabled={pushLoading}>
-              {pushLoading ? (
-                <ActivityIndicator color={colors.accent} />
-              ) : (
-                <Text style={styles.link}>Enable notifications →</Text>
-              )}
-            </Pressable>
-          )}
+        <View style={[styles.item, pushDone && styles.itemDone]}>
+          <Text style={styles.check}>{pushDone ? '✓' : '2'}</Text>
+          <View style={styles.flex}>
+            <Text style={styles.itemTitle}>Turn on reminders</Text>
+            <Text style={styles.itemBody}>
+              {isExpoGo()
+                ? 'Push alerts need a dev build (not Expo Go). You can enable later in Settings.'
+                : 'Push alerts before deadlines — not inbox spam. Optional but recommended.'}
+            </Text>
+            {!pushDone && !isExpoGo() && (
+              <Pressable onPress={enablePush} disabled={pushLoading}>
+                {pushLoading ? (
+                  <ActivityIndicator color={colors.accent} />
+                ) : (
+                  <Text style={styles.link}>Enable notifications →</Text>
+                )}
+              </Pressable>
+            )}
+          </View>
         </View>
-      </View>
-
-      <View style={[styles.item, plaidDone && styles.itemDone]}>
-        <Text style={styles.check}>{plaidDone ? '✓' : '4'}</Text>
-        <View style={styles.flex}>
-          <Text style={styles.itemTitle}>Refund radar (optional)</Text>
-          <Text style={styles.itemBody}>
-            {plaidDone
-              ? 'Bank linked — we\'ll match deposits to your returns.'
-              : 'Detect when refunds hit your account. Requires Android dev build (not Expo Go).'}
-          </Text>
-          {!plaidDone && (
-            <Pressable onPress={linkBank} disabled={plaidLoading}>
-              {plaidLoading ? (
-                <ActivityIndicator color={colors.accent} />
-              ) : (
-                <Text style={styles.link}>Connect bank →</Text>
-              )}
-            </Pressable>
-          )}
-        </View>
-      </View>
       </ScrollView>
 
       <View style={styles.footerBar}>
-        <Pressable style={styles.btn} onPress={finish}>
+        <Pressable
+          style={[styles.btn, linked === 0 && styles.btnDisabled]}
+          onPress={finish}
+          disabled={linked === 0}
+        >
           <Text style={styles.btnText}>Go to dashboard</Text>
         </Pressable>
-        <Text style={styles.footer}>Review receipts and add returns from the dashboard after setup.</Text>
+        <Text style={styles.footer}>
+          {linked === 0
+            ? 'Connect Gmail first to start finding returns.'
+            : 'You can close the app — we keep syncing in the background.'}
+        </Text>
       </View>
     </View>
   );
@@ -299,6 +253,7 @@ function createStyles(colors: ThemeColors) {
       borderRadius: 14,
       alignItems: 'center',
     },
+    btnDisabled: { opacity: 0.45 },
     btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
     footer: { color: colors.textDim, textAlign: 'center', marginTop: 10, fontSize: 12, lineHeight: 18 },
   });

@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma db push",
     "prisma:studio": "prisma studio",
-    "test": "npx --yes tsx --test src/parsers/parsers.test.ts"
+    "test": "npx --yes tsx --test src/parsers/parsers.test.ts src/common/timezone-schedule.test.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^10.2.1",
@@ -26,6 +26,7 @@
     "class-validator": "^0.14.1",
     "googleapis": "^144.0.0",
     "ioredis": "^5.4.2",
+    "luxon": "^3.5.0",
     "jsonwebtoken": "^9.0.2",
     "plaid": "^30.0.0",
     "reflect-metadata": "^0.2.2",

@@ -16,6 +16,7 @@ import { trackEvent } from '../../lib/analytics';
 import { api, ensureAuthToken, formatNetworkError } from '../../lib/api';
 import { hasCelebratedFirstReturn, markFirstReturnCelebrated } from '../../lib/celebration';
 import { getActiveCampaign } from '../../lib/campaigns';
+import { getDeviceTimezone } from '../../lib/device-timezone';
 import { registerForPushNotifications } from '../../lib/notifications';
 import { tryApplyPendingReferral } from '../../lib/pending-referral';
 import { useTheme } from '../../lib/ThemeProvider';
@@ -85,6 +86,7 @@ export default function HomeScreen() {
       setReviewPending(me.review_pending_count ?? 0);
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
+      void api.syncTimezone(getDeviceTimezone()).catch(() => {});
       void registerForPushNotifications().catch(() => {});
       const statsPromise = api.getReturnStats();
       const activePromise = api.getActiveReturns();

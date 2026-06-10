@@ -2,6 +2,7 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { api } from './api';
+import { getDeviceTimezone } from './device-timezone';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -53,7 +54,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
     }
 
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
-    await api.registerPushToken(token);
+    await api.registerPushToken(token, getDeviceTimezone());
     return token;
   } catch (err) {
     console.warn('Push registration failed:', err);

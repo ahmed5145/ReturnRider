@@ -11,6 +11,7 @@ import {
   extractReturnLabelUrl,
   stripHtml,
   addReturnWindow,
+  resolveOrderDate,
 } from './parser-utils';
 
 export function parseAmazon(input: ParseInput): ParsedReceipt | null {
@@ -37,7 +38,7 @@ export function parseAmazon(input: ParseInput): ParsedReceipt | null {
   const isReturn = intent === 'return_label' || intent === 'refund';
   const total = extractAmount(text);
   const labelUrl = isReturn ? extractReturnLabelUrl(input.htmlBody, text) : undefined;
-  const orderDate = new Date();
+  const orderDate = resolveOrderDate(input.emailDate);
 
   const confidence = scoreParseConfidence({
     intent,
@@ -59,6 +60,7 @@ export function parseAmazon(input: ParseInput): ParsedReceipt | null {
     returnDeadlineAt: addReturnWindow(orderDate, 30),
     returnLabelUrl: labelUrl ?? undefined,
     emailIntent: intent,
+    parserTier: 'merchant',
     confidence,
   };
 }

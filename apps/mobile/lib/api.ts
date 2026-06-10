@@ -123,10 +123,19 @@ export const api = {
       body: JSON.stringify({ confirm: 'DELETE' }),
     }),
 
-  registerPushToken: (expo_push_token: string) =>
+  registerPushToken: (expo_push_token: string, timezone?: string) =>
     request('/users/push-token', {
       method: 'POST',
-      body: JSON.stringify({ expo_push_token }),
+      body: JSON.stringify({
+        expo_push_token,
+        ...(timezone ? { timezone } : {}),
+      }),
+    }),
+
+  syncTimezone: (timezone: string) =>
+    request('/users/timezone', {
+      method: 'POST',
+      body: JSON.stringify({ timezone }),
     }),
 
   getReturnStats: () =>

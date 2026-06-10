@@ -9,7 +9,10 @@ import {
   isCommerceEmail,
   isReturnRelatedSubject,
 } from '../parsers/commerce-classifier';
-import { addReturnWindow } from '../parsers/merchants/parser-utils';
+import {
+  addReturnWindow,
+  parseGmailInternalDate,
+} from '../parsers/merchants/parser-utils';
 import { parseReceipt } from '../parsers/merchants';
 import { ParsedReceipt } from '../parsers/types';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
@@ -228,7 +231,8 @@ export class EmailSyncService {
     const from = headers.find((h) => h.name?.toLowerCase() === 'from')?.value ?? '';
     const subject = headers.find((h) => h.name?.toLowerCase() === 'subject')?.value ?? '';
     const { html, text } = this.extractBodies(raw.payload);
-    return parseReceipt({ from, subject, htmlBody: html, textBody: text });
+    const emailDate = parseGmailInternalDate(raw.internalDate);
+    return parseReceipt({ from, subject, htmlBody: html, textBody: text, emailDate });
   }
 
   private async processMessage(
@@ -247,9 +251,16 @@ export class EmailSyncService {
     }
 
     const { html, text } = this.extractBodies(raw.payload);
-    const parsed = parseReceipt({ from, subject, htmlBody: html, textBody: text });
+    const emailDate = parseGmailInternalDate(raw.internalDate);
+    const parsed = parseReceipt({ from, subject, htmlBody: html, textBody: text, emailDate });
     if (!parsed) {
       return { reviewQueued: false, returnCreated: false };
+    }
+
+    // Dedicated merchant parsers auto-create; queue only generic / low-confidence unknowns.
+    if (parsed.parserTier === 'merchant') {
+      const returnCreated = await this.persistOrderAndReturn(linkedEmailId, userId, parsed);
+      return { reviewQueued: false, returnCreated };
     }
 
     if (parsed.confidence < REVIEW_THRESHOLD) {
