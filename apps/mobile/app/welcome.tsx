@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { trackEvent } from '../lib/analytics';
-import { colors } from '../lib/theme';
+import { useTheme } from '../lib/ThemeProvider';
+import type { ThemeColors } from '../lib/themes';
 
 const SLIDES = [
   {
@@ -50,9 +51,19 @@ const SLIDES = [
     visual: 'notify',
     stat: 'Not email spam—just deadlines',
   },
-];
+] as const;
 
-function SlideVisual({ type, accent }: { type: string; accent: string }) {
+type WelcomeStyles = ReturnType<typeof createStyles>;
+
+function SlideVisual({
+  type,
+  accent,
+  styles,
+}: {
+  type: string;
+  accent: string;
+  styles: WelcomeStyles;
+}) {
   if (type === 'return') {
     return (
       <View style={[styles.mockCard, { borderColor: accent }]}>
@@ -97,6 +108,8 @@ function SlideVisual({ type, accent }: { type: string; accent: string }) {
 }
 
 export default function WelcomeScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [index, setIndex] = useState(0);
   const ref = useRef<FlatList>(null);
   const width = Dimensions.get('window').width;
@@ -133,7 +146,7 @@ export default function WelcomeScreen() {
             <View style={[styles.iconCircle, { backgroundColor: `${item.accent}22` }]}>
               <Text style={styles.icon}>{item.icon}</Text>
             </View>
-            <SlideVisual type={item.visual} accent={item.accent} />
+            <SlideVisual type={item.visual} accent={item.accent} styles={styles} />
             <Text style={styles.title}>{item.title}</Text>
             <Text style={styles.body}>{item.body}</Text>
             <Text style={[styles.stat, { color: item.accent }]}>{item.stat}</Text>
@@ -169,7 +182,7 @@ export default function WelcomeScreen() {
           }
         }}
       >
-        <Text style={styles.btnText}>{isLast ? 'Get started — it\'s free' : 'Continue'}</Text>
+        <Text style={styles.btnText}>{isLast ? "Get started — it's free" : 'Continue'}</Text>
       </Pressable>
       {!isLast && (
         <Pressable onPress={() => router.push('/onboarding/checklist')}>
@@ -180,111 +193,115 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg, paddingTop: 56, paddingBottom: 32 },
-  header: { alignItems: 'center', marginBottom: 8 },
-  logo: { fontSize: 22, fontWeight: '800', color: colors.accent, letterSpacing: 0.5 },
-  tagline: { fontSize: 13, color: colors.textDim, marginTop: 4 },
-  slide: { paddingHorizontal: 28, alignItems: 'center' },
-  iconCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  icon: { fontSize: 36 },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  body: {
-    fontSize: 15,
-    color: colors.textMuted,
-    lineHeight: 22,
-    textAlign: 'center',
-    paddingHorizontal: 8,
-  },
-  stat: { fontSize: 12, fontWeight: '600', marginTop: 14, textAlign: 'center' },
-  mockCard: {
-    width: '85%',
-    backgroundColor: colors.bgCard,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 2,
-    marginTop: 8,
-  },
-  mockMerchant: { color: colors.text, fontWeight: '700', fontSize: 18 },
-  mockItem: { color: colors.textMuted, marginTop: 4 },
-  mockBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginTop: 12,
-  },
-  mockBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
-  privacyBox: {
-    width: '85%',
-    backgroundColor: colors.bgCard,
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-  },
-  privacyOk: { color: colors.success, fontSize: 14, marginVertical: 4 },
-  privacyNo: { color: colors.textDim, fontSize: 14, marginVertical: 4 },
-  walletCard: {
-    width: '75%',
-    backgroundColor: colors.bgElevated,
-    borderRadius: 12,
-    padding: 16,
-    borderTopWidth: 4,
-    marginTop: 8,
-    alignItems: 'center',
-  },
-  walletLabel: { color: colors.textDim, fontSize: 10, letterSpacing: 1 },
-  walletMerchant: { color: colors.text, fontSize: 20, fontWeight: '700', marginTop: 8 },
-  qrPlaceholder: {
-    marginTop: 12,
-    width: 80,
-    height: 80,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrText: { color: '#000', fontWeight: '700' },
-  notifyStack: { width: '85%', marginTop: 8, gap: 8 },
-  notifyItem: {
-    backgroundColor: colors.bgCard,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  notifyText: { color: colors.text, fontWeight: '500' },
-  progressTrack: {
-    height: 4,
-    backgroundColor: colors.border,
-    marginHorizontal: 24,
-    borderRadius: 2,
-    marginTop: 16,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: 2 },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: 16 },
-  dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
-  btn: {
-    marginHorizontal: 24,
-    padding: 18,
-    borderRadius: 14,
-    alignItems: 'center',
-  },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-  skip: { color: colors.textDim, textAlign: 'center', marginTop: 14, fontSize: 14 },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg, paddingTop: 56, paddingBottom: 32 },
+    header: { alignItems: 'center', marginBottom: 8 },
+    logo: { fontSize: 22, fontWeight: '800', color: colors.accent, letterSpacing: 0.5 },
+    tagline: { fontSize: 13, color: colors.textDim, marginTop: 4 },
+    slide: { paddingHorizontal: 28, alignItems: 'center' },
+    iconCircle: {
+      width: 72,
+      height: 72,
+      borderRadius: 36,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 20,
+    },
+    icon: { fontSize: 36 },
+    title: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+      textAlign: 'center',
+      marginTop: 20,
+      marginBottom: 10,
+    },
+    body: {
+      fontSize: 15,
+      color: colors.textMuted,
+      lineHeight: 22,
+      textAlign: 'center',
+      paddingHorizontal: 8,
+    },
+    stat: { fontSize: 12, fontWeight: '600', marginTop: 14, textAlign: 'center' },
+    mockCard: {
+      width: '85%',
+      backgroundColor: colors.bgCard,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 2,
+      marginTop: 8,
+    },
+    mockMerchant: { color: colors.text, fontWeight: '700', fontSize: 18 },
+    mockItem: { color: colors.textMuted, marginTop: 4 },
+    mockBadge: {
+      alignSelf: 'flex-start',
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 8,
+      marginTop: 12,
+    },
+    mockBadgeText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+    privacyBox: {
+      width: '85%',
+      backgroundColor: colors.bgCard,
+      borderRadius: 16,
+      padding: 16,
+      marginTop: 8,
+    },
+    privacyOk: { color: colors.success, fontSize: 14, marginVertical: 4 },
+    privacyNo: { color: colors.textDim, fontSize: 14, marginVertical: 4 },
+    walletCard: {
+      width: '75%',
+      backgroundColor: colors.bgElevated,
+      borderRadius: 12,
+      padding: 16,
+      borderTopWidth: 4,
+      marginTop: 8,
+      alignItems: 'center',
+    },
+    walletLabel: { color: colors.textDim, fontSize: 10, letterSpacing: 1 },
+    walletMerchant: { color: colors.text, fontSize: 20, fontWeight: '700', marginTop: 8 },
+    qrPlaceholder: {
+      marginTop: 12,
+      width: 80,
+      height: 80,
+      backgroundColor: colors.bgCard,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    qrText: { color: colors.text, fontWeight: '700' },
+    notifyStack: { width: '85%', marginTop: 8, gap: 8 },
+    notifyItem: {
+      backgroundColor: colors.bgCard,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    notifyText: { color: colors.text, fontWeight: '500' },
+    progressTrack: {
+      height: 4,
+      backgroundColor: colors.border,
+      marginHorizontal: 24,
+      borderRadius: 2,
+      marginTop: 16,
+      overflow: 'hidden',
+    },
+    progressFill: { height: '100%', borderRadius: 2 },
+    dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginVertical: 16 },
+    dot: { width: 8, height: 8, borderRadius: 4, backgroundColor: colors.border },
+    btn: {
+      marginHorizontal: 24,
+      padding: 18,
+      borderRadius: 14,
+      alignItems: 'center',
+    },
+    btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+    skip: { color: colors.textDim, textAlign: 'center', marginTop: 14, fontSize: 14 },
+  });
+}
