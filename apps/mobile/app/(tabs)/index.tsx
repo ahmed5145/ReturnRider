@@ -67,6 +67,7 @@ export default function HomeScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
   const [showCelebration, setShowCelebration] = useState(false);
   const [stats, setStats] = useState<ReturnStats | null>(null);
+  const [nextUp, setNextUp] = useState<ReturnSummary | null>(null);
   const [snoozingId, setSnoozingId] = useState<string | null>(null);
 
   const load = async (isRefresh = false) => {
@@ -85,16 +86,27 @@ export default function HomeScreen() {
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
       void registerForPushNotifications().catch(() => {});
-      const [statsRes, returnsRes] = await Promise.all([
-        api.getReturnStats(),
+      const statsPromise = api.getReturnStats();
+      const activePromise = api.getActiveReturns();
+      const listPromise =
         statusFilter === 'completed'
           ? api.getCompletedReturns()
-          : api.getActiveReturns(
-              statusFilter === 'all_active' ? undefined : statusFilter,
-            ),
+          : statusFilter === 'all_active'
+            ? activePromise
+            : api.getActiveReturns(statusFilter);
+
+      const [statsRes, activeRes, returnsRes] = await Promise.all([
+        statsPromise,
+        activePromise,
+        listPromise,
       ]);
+
       setStats(statsRes);
       setReturns(returnsRes.data);
+      const nearest = activeRes.data
+        .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
+        .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
+      setNextUp(nearest ?? null);
       if (returnsRes.data.length > 0 && !(await hasCelebratedFirstReturn())) {
         trackEvent('first_return_visible', { count: returnsRes.data.length });
         await markFirstReturnCelebrated();
@@ -131,14 +143,7 @@ export default function HomeScreen() {
     return <DashboardSkeleton />;
   }
 
-  const nextDeadline =
-    statusFilter === 'completed'
-      ? undefined
-      : returns
-          .filter((r) => r.days_remaining != null && r.days_remaining >= 0)
-          .sort((a, b) => (a.days_remaining ?? 999) - (b.days_remaining ?? 999))[0];
-
-  const campaign = statusFilter !== 'completed' ? getActiveCampaign() : null;
+  const campaign = getActiveCampaign();
 
   return (
     <View style={styles.container}>
@@ -172,18 +177,40 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {nextDeadline && nextDeadline.days_remaining != null && nextDeadline.days_remaining <= 7 && (
-        <Link href={`/returns/${nextDeadline.id}`} asChild>
+      {nextUp && nextUp.days_remaining != null && nextUp.days_remaining <= 7 && (
+        <Link href={`/returns/${nextUp.id}`} asChild>
           <Pressable style={styles.deadlineBanner}>
             <Text style={styles.deadlineBannerTitle}>
-              Next up: {nextDeadline.merchant_name} —{' '}
-              {formatDaysRemaining(nextDeadline.days_remaining)}
+              Next up: {nextUp.merchant_name} —{' '}
+              {formatDaysRemaining(nextUp.days_remaining)}
             </Text>
             <Text style={styles.deadlineBannerSub}>
               Tap for details · Push reminders need the dev build app
             </Text>
           </Pressable>
         </Link>
+      )}
+
+      {stats && statusFilter === 'completed' && (
+        <View style={styles.heroCard}>
+          <Text style={styles.heroLabel}>Refunds recovered</Text>
+          <View style={styles.heroRow}>
+            <View style={styles.heroStat}>
+              <Text style={[styles.heroAmount, { color: colors.success }]}>
+                ${stats.refunded_ytd.toFixed(0)}
+              </Text>
+              <Text style={styles.heroSub}>refunded YTD</Text>
+            </View>
+            <View style={styles.heroDivider} />
+            <View style={styles.heroStat}>
+              <Text style={styles.heroAmount}>${stats.refunded_all_time.toFixed(0)}</Text>
+              <Text style={styles.heroSub}>all time</Text>
+            </View>
+          </View>
+          <Text style={styles.heroFoot}>
+            {stats.completed_count} completed return{stats.completed_count === 1 ? '' : 's'}
+          </Text>
+        </View>
       )}
 
       {stats && statusFilter !== 'completed' && (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import {
   ActivityIndicator,
@@ -17,10 +17,13 @@ import { RefundCelebration } from '../../components/RefundCelebration';
 import { trackEvent } from '../../lib/analytics';
 import { api } from '../../lib/api';
 import { getSnoozeSuggestion, type SnoozeMode } from '../../lib/snooze';
+import { useTheme } from '../../lib/ThemeProvider';
+import type { ThemeColors } from '../../lib/themes';
 import { formatDaysRemaining, getUrgencyColor } from '../../lib/urgency';
-import { colors } from '../../lib/theme';
 
 export default function ReturnDetailScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{ id: string | string[] }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [data, setData] = useState<Awaited<ReturnType<typeof api.getReturn>> | null>(null);
@@ -446,7 +449,8 @@ export default function ReturnDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   scroll: { flex: 1 },
   content: { padding: 24, paddingBottom: 48 },
@@ -564,3 +568,4 @@ const styles = StyleSheet.create({
   },
   removeBtnText: { color: '#ff6b6b', fontWeight: '600' },
 });
+}

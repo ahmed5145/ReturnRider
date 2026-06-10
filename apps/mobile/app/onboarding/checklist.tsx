@@ -1,5 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Link, router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { trackEvent } from '../../lib/analytics';
 import { api, ensureAuthToken, formatNetworkError } from '../../lib/api';
@@ -73,12 +81,24 @@ export default function ChecklistScreen() {
     router.replace('/');
   };
 
-  const hasReturnValue = returns > 0 || reviewPending > 0;
+  const scanDone = linked > 0 && !refreshing;
   const stepsDone =
     (linked > 0 ? 1 : 0) +
-    (hasReturnValue ? 1 : 0) +
+    (scanDone ? 1 : 0) +
     (pushDone ? 1 : 0) +
     (plaidDone ? 1 : 0);
+
+  const scanStatusText = (() => {
+    if (!linked) return 'Connect Gmail first — we scan order and return emails automatically.';
+    if (refreshing) return 'Checking your inbox…';
+    if (reviewPending > 0) {
+      return `We found ${reviewPending} possible return${reviewPending === 1 ? '' : 's'} — review them on your dashboard after setup.`;
+    }
+    if (returns > 0) {
+      return `${returns} return${returns === 1 ? '' : 's'} ready on your dashboard after setup.`;
+    }
+    return 'Scan complete. More returns may appear as we read your shopping mail.';
+  })();
   const percent = Math.round((stepsDone / SETUP_STEPS) * 100);
 
   const protectionHint = (() => {
@@ -92,23 +112,29 @@ export default function ChecklistScreen() {
   })();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.eyebrow}>Almost there</Text>
-      <Text style={styles.title}>Set up in under 2 minutes</Text>
-      <Text style={styles.sub}>
-        One-time setup. Connect once, then returns appear automatically.
-      </Text>
+    <View style={styles.screen}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator
+      >
+        <Text style={styles.eyebrow}>Almost there</Text>
+        <Text style={styles.title}>Set up in under 2 minutes</Text>
+        <Text style={styles.sub}>
+          One-time setup. Connect once, then returns appear automatically.
+        </Text>
 
-      {connected && (
-        <View style={styles.successBanner}>
-          <Text style={styles.successTitle}>Gmail connected</Text>
-          <Text style={styles.successBody}>
-            Scanning last 90 days of shopping mail for {connected}…
-          </Text>
-        </View>
-      )}
+        {connected && (
+          <View style={styles.successBanner}>
+            <Text style={styles.successTitle}>Gmail connected</Text>
+            <Text style={styles.successBody}>
+              Scanning last 90 days of shopping mail for {connected}…
+            </Text>
+          </View>
+        )}
 
-      <View style={styles.progressCard}>
+        <View style={styles.progressCard}>
         <Text style={styles.progressText}>
           {refreshing ? 'Updating…' : `${percent}% protected · ${stepsDone} of ${SETUP_STEPS}`}
         </Text>
@@ -133,34 +159,11 @@ export default function ChecklistScreen() {
         </View>
       </View>
 
-      <View style={[styles.item, hasReturnValue && styles.itemDone]}>
-        <Text style={styles.check}>{hasReturnValue ? '✓' : '2'}</Text>
+      <View style={[styles.item, scanDone && styles.itemDone]}>
+        <Text style={styles.check}>{scanDone ? '✓' : '2'}</Text>
         <View style={styles.flex}>
-          <Text style={styles.itemTitle}>See your first return</Text>
-          <Text style={styles.itemBody}>
-            {reviewPending > 0
-              ? `${reviewPending} receipt${reviewPending === 1 ? '' : 's'} need a quick review.`
-              : returns > 0
-                ? `${returns} return${returns === 1 ? '' : 's'} on your dashboard.`
-                : 'From email sync, review queue, manual entry, or scan.'}
-          </Text>
-          <View style={styles.linkRow}>
-            {reviewPending > 0 && (
-              <>
-                <Link href="/parse-review" style={styles.link}>
-                  Review receipts
-                </Link>
-                <Text style={styles.sep}> · </Text>
-              </>
-            )}
-            <Link href="/add-return" style={styles.link}>
-              Add manually
-            </Link>
-            <Text style={styles.sep}> · </Text>
-            <Link href="/scan-receipt" style={styles.link}>
-              Scan
-            </Link>
-          </View>
+          <Text style={styles.itemTitle}>Finding your returns</Text>
+          <Text style={styles.itemBody}>{scanStatusText}</Text>
         </View>
       </View>
 
@@ -201,18 +204,31 @@ export default function ChecklistScreen() {
           )}
         </View>
       </View>
+      </ScrollView>
 
-      <Pressable style={styles.btn} onPress={finish}>
-        <Text style={styles.btnText}>Go to dashboard</Text>
-      </Pressable>
-      <Text style={styles.footer}>You can finish setup later from Settings</Text>
+      <View style={styles.footerBar}>
+        <Pressable style={styles.btn} onPress={finish}>
+          <Text style={styles.btnText}>Go to dashboard</Text>
+        </Pressable>
+        <Text style={styles.footer}>Review receipts and add returns from the dashboard after setup.</Text>
+      </View>
     </View>
   );
 }
 
 function createStyles(colors: ThemeColors) {
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.bg, padding: 24, paddingTop: 56 },
+    screen: { flex: 1, backgroundColor: colors.bg },
+    scroll: { flex: 1 },
+    scrollContent: { padding: 24, paddingTop: 56, paddingBottom: 16 },
+    footerBar: {
+      paddingHorizontal: 24,
+      paddingTop: 12,
+      paddingBottom: 28,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.bg,
+    },
     eyebrow: { color: colors.accent, fontWeight: '600', fontSize: 13, textTransform: 'uppercase' },
     title: { fontSize: 26, fontWeight: '700', color: colors.text, marginTop: 6 },
     sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
@@ -276,17 +292,14 @@ function createStyles(colors: ThemeColors) {
       marginBottom: 8,
       lineHeight: 18,
     },
-    linkRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' },
     link: { color: colors.accent, fontSize: 14, fontWeight: '600' },
-    sep: { color: colors.textDim },
     btn: {
       backgroundColor: colors.accent,
       padding: 18,
       borderRadius: 14,
       alignItems: 'center',
-      marginTop: 'auto',
     },
     btnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
-    footer: { color: colors.textDim, textAlign: 'center', marginTop: 12, fontSize: 12 },
+    footer: { color: colors.textDim, textAlign: 'center', marginTop: 10, fontSize: 12, lineHeight: 18 },
   });
 }

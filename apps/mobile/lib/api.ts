@@ -112,6 +112,9 @@ export const api = {
   completeOnboarding: () =>
     request('/users/onboarding-complete', { method: 'POST', body: '{}' }),
 
+  resetOnboarding: () =>
+    request<{ reset: boolean }>('/users/onboarding-reset', { method: 'POST', body: '{}' }),
+
   exportMyData: () => request<Record<string, unknown>>('/users/me/export'),
 
   deleteAccount: () =>

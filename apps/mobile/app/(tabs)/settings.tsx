@@ -176,9 +176,27 @@ export default function SettingsScreen() {
     }
   };
 
-  const resetSession = async () => {
-    await clearAuthToken();
-    router.replace('/');
+  const resetSession = () => {
+    Alert.alert(
+      'Reset session?',
+      'Clears saved login and replays onboarding. Your returns and connected Gmail stay on your account.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset',
+          onPress: async () => {
+            try {
+              await ensureAuthToken();
+              await api.resetOnboarding();
+            } catch {
+              // Still sign out locally if API is unreachable
+            }
+            await clearAuthToken();
+            router.replace('/welcome');
+          },
+        },
+      ],
+    );
   };
 
   const downloadMyData = async () => {
@@ -311,7 +329,7 @@ export default function SettingsScreen() {
       <Pressable style={styles.inviteCard} onPress={resetSession}>
         <Text style={styles.inviteTitle}>Reset session</Text>
         <Text style={styles.hint}>
-          Use after switching API (local ↔ staging). Clears saved login and signs in again.
+          Clears saved login and replays onboarding. Use after switching API (local ↔ staging).
         </Text>
       </Pressable>
 

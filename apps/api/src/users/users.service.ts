@@ -140,6 +140,14 @@ export class UsersService {
     });
   }
 
+  async resetOnboarding(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { onboardingCompletedAt: null },
+    });
+    return { reset: true };
+  }
+
   async exportUserData(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },

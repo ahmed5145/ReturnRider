@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { api, ensureAuthToken } from '../lib/api';
-import { colors } from '../lib/theme';
+import { useTheme } from '../lib/ThemeProvider';
+import type { ThemeColors } from '../lib/themes';
 
 export default function ScanReceiptScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [permission, requestPermission] = useCameraPermissions();
   const [rawText, setRawText] = useState('');
   const [parsed, setParsed] = useState<Record<string, unknown> | null>(null);
@@ -102,7 +105,8 @@ export default function ScanReceiptScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   pad: { padding: 24, paddingTop: 48 },
   camera: { flex: 1 },
@@ -129,3 +133,4 @@ const styles = StyleSheet.create({
   secondaryText: { color: colors.accent },
   parsed: { color: colors.success, marginVertical: 8 },
 });
+}

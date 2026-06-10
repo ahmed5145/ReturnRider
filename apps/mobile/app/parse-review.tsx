@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,7 +11,8 @@ import {
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken, formatNetworkError } from '../lib/api';
-import { colors } from '../lib/theme';
+import { useTheme } from '../lib/ThemeProvider';
+import type { ThemeColors } from '../lib/themes';
 
 interface ReviewItem {
   id: string;
@@ -22,6 +23,8 @@ interface ReviewItem {
 }
 
 export default function ParseReviewScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<string | null>(null);
@@ -53,7 +56,6 @@ export default function ParseReviewScreen() {
       await load();
       if (res.return_created) {
         Alert.alert('Added', 'Return is now on your dashboard.');
-        router.replace('/');
       } else {
         Alert.alert(
           'Already tracked',
@@ -163,7 +165,8 @@ export default function ParseReviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
   center: { flex: 1, justifyContent: 'center', backgroundColor: colors.bg },
   sub: {
@@ -208,3 +211,4 @@ const styles = StyleSheet.create({
   dismiss: { color: colors.textDim, fontSize: 14 },
   empty: { color: colors.textMuted, textAlign: 'center', marginTop: 40 },
 });
+}

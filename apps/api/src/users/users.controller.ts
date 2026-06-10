@@ -64,6 +64,11 @@ export class UsersController {
     return this.usersService.completeOnboarding(user.id, dto.display_name);
   }
 
+  @Post('onboarding-reset')
+  async onboardingReset(@CurrentUser() user: User) {
+    return this.usersService.resetOnboarding(user.id);
+  }
+
   @Get('me/export')
   async exportData(@CurrentUser() user: User) {
     return this.usersService.exportUserData(user.id);

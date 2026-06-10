@@ -1,11 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack } from 'expo-router';
 import { trackEvent } from '../lib/analytics';
 import { api, ensureAuthToken } from '../lib/api';
-import { colors } from '../lib/theme';
+import { useTheme } from '../lib/ThemeProvider';
+import type { ThemeColors } from '../lib/themes';
 
 export default function AddReturnScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [merchant, setMerchant] = useState('');
   const [orderId, setOrderId] = useState('');
   const [item, setItem] = useState('');
@@ -105,28 +108,30 @@ export default function AddReturnScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
-  pad: { padding: 24, paddingTop: 16 },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text },
-  sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
-  label: { color: colors.textMuted, marginTop: 12, marginBottom: 6 },
-  input: {
-    backgroundColor: colors.bgCard,
-    borderRadius: 10,
-    padding: 12,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  error: { color: '#ff6b6b', marginTop: 12 },
-  btn: {
-    backgroundColor: colors.accent,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 32,
-  },
-  btnText: { color: '#fff', fontWeight: '600' },
-});
+function createStyles(colors: ThemeColors) {
+  return StyleSheet.create({
+    container: { flex: 1, backgroundColor: colors.bg },
+    pad: { padding: 24, paddingTop: 16 },
+    title: { fontSize: 22, fontWeight: '700', color: colors.text },
+    sub: { color: colors.textMuted, marginBottom: 20, marginTop: 8, lineHeight: 20 },
+    label: { color: colors.textMuted, marginTop: 12, marginBottom: 6 },
+    input: {
+      backgroundColor: colors.bgCard,
+      borderRadius: 10,
+      padding: 12,
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    error: { color: '#ff6b6b', marginTop: 12 },
+    btn: {
+      backgroundColor: colors.accent,
+      padding: 16,
+      borderRadius: 12,
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 32,
+    },
+    btnText: { color: '#fff', fontWeight: '600' },
+  });
+}
