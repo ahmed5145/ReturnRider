@@ -122,24 +122,22 @@ Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_E
 
 Render **free** web services spin down after ~15 minutes idle. While asleep, BullMQ sync and scheduled push jobs do not run.
 
-**Option A — Render cron (in `render.yaml`):**
+**Recommended — UptimeRobot (free, no credit card):**
 
-1. Open [dashboard.render.com](https://dashboard.render.com) → your **ReturnRider** blueprint (or the `returnrider-api` service).
-2. After a deploy that includes `render.yaml`, look in the left sidebar for **Cron Jobs** (or a second service named **`api-keep-warm`**).
-3. If you do **not** see it: **Blueprints** → **Sync** / **Apply** so Render picks up the new cron entry from `render.yaml`.
-4. Open **`api-keep-warm`** → **Logs**. After ~14 minutes you should see successful `curl` output against `/health`.
-5. Optional check: leave the app closed for 20+ minutes, then open the dashboard — the “sync is behind” banner should **not** appear if keep-warm is working.
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free tier: 50 monitors).
+2. **Add New Monitor**
+   - Monitor type: **HTTP(s)**
+   - Friendly name: `ReturnRider API`
+   - URL: `https://returnrider-api.onrender.com/health`
+   - Monitoring interval: **5 minutes**
+3. **Create Monitor**
+4. Within ~30 minutes the API should stay warm. Confirm in Render → `returnrider-api` → **Logs** (requests every 5 min).
 
-> Render cron may require a paid plan on some accounts. If no Cron Jobs section appears, use **Option B** (UptimeRobot) — it works the same way.
+**Verify it works:** Leave the mobile app closed for 25+ minutes, then open the dashboard. The “Inbox sync is behind” banner should **not** appear.
 
-**Option B — UptimeRobot (free, no Render cron needed):**
+**Do not add payment to Render** just for keep-warm — Render **cron jobs** require a card on file. We intentionally removed cron from `render.yaml` for staging.
 
-1. Create account at [uptimerobot.com](https://uptimerobot.com)
-2. Add monitor → **HTTP(s)** → URL `https://returnrider-api.onrender.com/health`
-3. Interval **5 minutes**
-4. Save — cold starts should stop within a day of monitoring
-
-**Option C — Paid always-on:** Upgrade the `returnrider-api` service to **Starter** on Render.
+**Later (paid):** Upgrade `returnrider-api` to **Starter** (~$7/mo) for always-on without an external pinger.
 
 ## Local vs staging
 

@@ -297,7 +297,7 @@ Update this table as sprints ship.
 | A | Slim onboarding | ✅ |
 | A | Review queue hybrid | ✅ |
 | B | Android APK + push E2E | ⬜ (manual — [DEV_BUILD.md](./DEV_BUILD.md)) |
-| B | Render always-on / keep-warm | ✅ (`render.yaml` cron + [STAGING_DEPLOY.md](./STAGING_DEPLOY.md)) |
+| B | Render always-on / keep-warm | ✅ ([UptimeRobot](./STAGING_DEPLOY.md) — free; no Render cron) |
 | B | Sync health UI | ✅ |
 | C | Gmail watch / faster sync | ⬜ |
 | C | OAuth verification | ⬜ |

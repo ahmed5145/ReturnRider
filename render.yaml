@@ -38,12 +38,5 @@ services:
       - key: PORT
         value: 10000
 
-  # Pings /health every 14 min so the free web service + BullMQ workers stay awake.
-  # Enable in Render dashboard after deploy, or use UptimeRobot (see docs/STAGING_DEPLOY.md).
-  - type: cron
-    name: api-keep-warm
-    runtime: image
-    schedule: "*/14 * * * *"
-    image:
-      url: docker.io/curlimages/curl:latest
-    dockerCommand: curl -fsS https://returnrider-api.onrender.com/health
+# Keep-warm: Render cron jobs require a card on file. Use free UptimeRobot instead —
+# see docs/STAGING_DEPLOY.md → "Keep the API awake (free tier)".
