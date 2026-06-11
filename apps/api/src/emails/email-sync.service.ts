@@ -23,6 +23,7 @@ import { ParseBlocklistService } from '../parsers/parse-blocklist.service';
 import { GmailService } from './gmail.service';
 
 const REVIEW_THRESHOLD = 0.85;
+const REVIEW_AUTO_DISMISS_DAYS = 7;
 
 @Injectable()
 export class EmailSyncService {
@@ -46,6 +47,7 @@ export class EmailSyncService {
   }
 
   async enqueueAllLinkedSyncs() {
+    await this.dismissStaleReviews();
     const inboxes = await this.prisma.linkedEmail.findMany({
       where: { status: { in: ['connected', 'error'] } },
       select: { id: true },
@@ -54,6 +56,34 @@ export class EmailSyncService {
       await this.enqueueSync(inbox.id);
     }
     return { queued: inboxes.length };
+  }
+
+  async enqueueUserLinkedSyncs(userId: string) {
+    const inboxes = await this.prisma.linkedEmail.findMany({
+      where: { userId, status: { in: ['connected', 'error'] } },
+      select: { id: true },
+    });
+    for (const inbox of inboxes) {
+      await this.enqueueSync(inbox.id);
+      await this.prisma.linkedEmail.update({
+        where: { id: inbox.id },
+        data: { status: 'syncing' },
+      });
+    }
+    return { queued: inboxes.length };
+  }
+
+  /** Passive review queue: auto-dismiss items older than 7 days. */
+  async dismissStaleReviews(): Promise<number> {
+    const cutoff = new Date(Date.now() - REVIEW_AUTO_DISMISS_DAYS * 24 * 60 * 60 * 1000);
+    const result = await this.prisma.parseReviewQueue.updateMany({
+      where: { status: 'pending', createdAt: { lt: cutoff } },
+      data: { status: 'dismissed' },
+    });
+    if (result.count > 0) {
+      this.logger.log(`Auto-dismissed ${result.count} stale parse review item(s)`);
+    }
+    return result.count;
   }
 
   async syncLinkedEmail(linkedEmailId: string) {
@@ -120,6 +150,7 @@ export class EmailSyncService {
   }
 
   async listPendingReviews(userId: string) {
+    await this.dismissStaleReviews();
     const items = await this.prisma.parseReviewQueue.findMany({
       where: { userId, status: 'pending' },
       orderBy: { createdAt: 'desc' },
@@ -213,7 +244,7 @@ export class EmailSyncService {
       item.linkedEmailId,
       userId,
       merged,
-      { forceReturn: true },
+      { forceReturn: true, sourceEmailSubject: item.rawSnippet ?? undefined },
     );
 
     await this.prisma.parseReviewQueue.update({
@@ -259,13 +290,20 @@ export class EmailSyncService {
       return { reviewQueued: false, returnCreated: false };
     }
 
-    if (await this.parseBlocklist.isMerchantBlocked(userId, parsed.merchantName)) {
+    // Blocklist applies only to generic-parser mail (e.g. Kohl's promos). Dedicated merchants
+    // (Amazon, Target, …) are never skipped — marking one bad email must not block real orders.
+    if (
+      parsed.parserTier === 'generic' &&
+      (await this.parseBlocklist.isMerchantBlocked(userId, parsed.merchantName))
+    ) {
       return { reviewQueued: false, returnCreated: false };
     }
 
     // Dedicated merchant parsers auto-create; queue only generic / low-confidence unknowns.
     if (parsed.parserTier === 'merchant') {
-      const returnCreated = await this.persistOrderAndReturn(linkedEmailId, userId, parsed);
+      const returnCreated = await this.persistOrderAndReturn(linkedEmailId, userId, parsed, {
+        sourceEmailSubject: subject,
+      });
       return { reviewQueued: false, returnCreated };
     }
 
@@ -298,7 +336,9 @@ export class EmailSyncService {
       return { reviewQueued: !existing || existing.status === 'pending', returnCreated: false };
     }
 
-    const returnCreated = await this.persistOrderAndReturn(linkedEmailId, userId, parsed);
+    const returnCreated = await this.persistOrderAndReturn(linkedEmailId, userId, parsed, {
+      sourceEmailSubject: subject,
+    });
     return { reviewQueued: false, returnCreated };
   }
 
@@ -344,7 +384,7 @@ export class EmailSyncService {
     linkedEmailId: string,
     userId: string,
     parsed: ParsedReceipt,
-    options?: { forceReturn?: boolean },
+    options?: { forceReturn?: boolean; sourceEmailSubject?: string },
   ): Promise<boolean> {
     const order = await this.prisma.order.upsert({
       where: {
@@ -365,10 +405,14 @@ export class EmailSyncService {
         currency: parsed.currency ?? 'USD',
         rawConfidence: parsed.confidence,
         source: 'email_parse',
+        sourceEmailSubject: options?.sourceEmailSubject,
       },
       update: {
         totalAmount: parsed.totalAmount,
         rawConfidence: parsed.confidence,
+        ...(options?.sourceEmailSubject
+          ? { sourceEmailSubject: options.sourceEmailSubject }
+          : {}),
       },
     });
 

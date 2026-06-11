@@ -131,9 +131,10 @@ model Order {
   currency        String      @default("USD") @db.Char(3)
   totalAmount     Decimal?    @map("total_amount") @db.Decimal(12, 2)
   source          OrderSource @default(email_parse)
-  rawConfidence   Decimal?    @map("raw_confidence") @db.Decimal(4, 3)
-  createdAt       DateTime    @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt       DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  rawConfidence        Decimal?    @map("raw_confidence") @db.Decimal(4, 3)
+  sourceEmailSubject   String?     @map("source_email_subject")
+  createdAt            DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
 
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   linkedEmail LinkedEmail? @relation(fields: [linkedEmailId], references: [id], onDelete: SetNull)
@@ -256,6 +257,7 @@ model ParseFeedback {
   userId       String   @map("user_id") @db.Uuid
   returnId     String?  @map("return_id") @db.Uuid
   merchantName String?  @map("merchant_name")
+  emailSubject String?  @map("email_subject")
   reason       String
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
 
