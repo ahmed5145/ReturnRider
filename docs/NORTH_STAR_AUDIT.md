@@ -12,7 +12,7 @@
 |------|--------|--------|-----|
 | Download & connect | Gmail OAuth once | ✅ Works (Expo Go + staging) | OAuth in **Testing** mode; verification needed for public users |
 | Forget about app | No ongoing chores | ⚠️ Partial | Review queue, manual flows, and optional features pull users back in |
-| Background detection | Automatic, timely | ⚠️ Partial | Server polls Gmail every **15 min**; Render **free tier sleeps** |
+| Background detection | Automatic, timely | ⚠️ Partial | Gmail poll every **5 min** ✅; UptimeRobot keep-warm ✅ |
 | Reminders | Push before deadline | ⚠️ Built but fragile | **No push in Expo Go (iOS)**; needs dev/production build; timezone scheduling ✅ (Sprint A) |
 
 **Verdict:** Server-side Gmail ingest + BullMQ push scheduling match the vision. **Deadline accuracy**, **push delivery**, and **onboarding friction** still break true “set and forget.”
@@ -299,9 +299,11 @@ Update this table as sprints ship.
 | B | Android APK + push E2E | ⬜ (manual — [DEV_BUILD.md](./DEV_BUILD.md)) |
 | B | Render always-on / keep-warm | ✅ ([UptimeRobot](./STAGING_DEPLOY.md) — free; no Render cron) |
 | B | Sync health UI | ✅ |
-| C | Gmail watch / faster sync | ⬜ |
-| C | OAuth verification | ⬜ |
-| C | Production hardening | ⬜ |
+| C | Gmail watch / faster sync | ✅ 5-min poll ([GMAIL_SYNC.md](./GMAIL_SYNC.md); watch deferred) |
+| C | Parse feedback blocklist | ✅ |
+| C | OAuth verification | ⬜ manual — [GOOGLE_OAUTH_VERIFICATION.md](./GOOGLE_OAUTH_VERIFICATION.md) |
+| C | Production hardening | ⚠️ startup warn + checklist ([STAGING_DEPLOY.md](./STAGING_DEPLOY.md)) |
+| C | Play / iOS store | ⬜ deferred |
 | — | Parser tuning sprint | ✅ [PARSER_TUNING.md](./PARSER_TUNING.md) |
 | — | Phase 3–4 product polish | ✅ [ROADMAP_PHASE4.md](./ROADMAP_PHASE4.md) |
 

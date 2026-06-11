@@ -35,6 +35,15 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  if (
+    process.env.NODE_ENV === 'production' &&
+    (process.env.ALLOW_DEV_AUTH === 'true' || process.env.ALLOW_DEV_AUTH === '1')
+  ) {
+    console.warn(
+      '[ReturnRider] ALLOW_DEV_AUTH is enabled in production — disable before public launch (see docs/STAGING_DEPLOY.md).',
+    );
+  }
+
   const port = process.env.PORT ?? 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`ReturnRider API listening on http://localhost:${port} (LAN: use your PC IPv4)`);

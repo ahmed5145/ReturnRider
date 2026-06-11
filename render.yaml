@@ -35,6 +35,8 @@ services:
         value: sandbox
       - key: ALLOW_DEV_AUTH
         value: "true"
+      - key: EMAIL_SYNC_INTERVAL_MINUTES
+        value: "5"
       - key: PORT
         value: 10000
 

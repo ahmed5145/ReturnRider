@@ -87,8 +87,8 @@ npm run test
 ## User feedback loop
 
 - **Parse review screen** — confirm or dismiss queued items.
-- **Report misparsed** on return detail → `parse_feedback` table (does not auto-retrain yet).
-- Future: feed `parse_feedback` into blocklist rules per merchant.
+- **Report misparsed** on return detail → `parse_feedback` table.
+- **`not_a_return`** → per-user merchant blocklist (`ParseBlocklistService`) skips future auto-creates for that merchant. See [GMAIL_SYNC.md](./GMAIL_SYNC.md).
 
 ---
 

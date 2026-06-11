@@ -116,7 +116,7 @@ API uses `origin: true` (all origins) — fine for staging. Tighten with `CORS_O
 
 ### Email sync scheduler
 
-Runs automatically every 15 min via BullMQ. Disable with `EMAIL_SYNC_SCHEDULER_ENABLED=false` if debugging.
+Runs automatically every **5 minutes** via BullMQ (`EMAIL_SYNC_INTERVAL_MINUTES`, default `5`). Disable with `EMAIL_SYNC_SCHEDULER_ENABLED=false` if debugging. Details: [GMAIL_SYNC.md](./GMAIL_SYNC.md).
 
 ### Keep the API awake (free tier)
 
@@ -146,6 +146,23 @@ Render **free** web services spin down after ~15 minutes idle. While asleep, Bul
 | API URL | `http://LAN_IP:3000/api/v1` | `https://….onrender.com/api/v1` |
 | PC must be on | Yes | No |
 | Free tier sleep | No | Render free spins down after idle |
+
+## Production launch checklist (Sprint C5)
+
+Before inviting strangers (not on your Google OAuth test-user list):
+
+| Step | Action |
+|------|--------|
+| 1 | `ALLOW_DEV_AUTH=false` on Render (or remove env var) |
+| 2 | Rotate `JWT_SECRET` and `ENCRYPTION_MASTER_KEY` — users must re-login / reconnect Gmail |
+| 3 | Complete [Google OAuth verification](./GOOGLE_OAUTH_VERIFICATION.md) |
+| 4 | Set `CORS_ORIGINS` to your app / web origins (optional but recommended) |
+| 5 | Confirm UptimeRobot or Render Starter keeps API awake |
+| 6 | `PLAID_ENV=production` only when ready for real bank links |
+
+API logs a startup **warning** if `ALLOW_DEV_AUTH=true` while `NODE_ENV=production`.
+
+---
 
 ## Troubleshooting
 
