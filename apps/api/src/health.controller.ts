@@ -44,11 +44,8 @@ export class HealthController {
   private async checkRedis(): Promise<{ ok: boolean; latency_ms?: number; error?: string }> {
     const start = Date.now();
     try {
-      const client = await this.emailSyncQueue.client;
-      const pong = await client.ping();
-      if (pong !== 'PONG') {
-        return { ok: false, error: `Unexpected ping response: ${pong}` };
-      }
+      // BullMQ Queue API — avoids IRedisClient.ping() which is not on the type surface.
+      await this.emailSyncQueue.getJobCounts();
       return { ok: true, latency_ms: Date.now() - start };
     } catch (err) {
       return {
