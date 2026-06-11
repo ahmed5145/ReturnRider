@@ -4,7 +4,7 @@ Host the NestJS API on Render (or similar) so the mobile app works without your 
 
 ## Prerequisites
 
-- [Neon](https://neon.tech) Postgres — run all migrations in `db/migrations/` (including `003_sync_stats.sql`)
+- [Neon](https://neon.tech) Postgres — run all migrations in `db/migrations/` (through `007_order_subject.sql`)
 - [Upstash](https://upstash.com) Redis — for BullMQ email sync + notifications
 - Google OAuth client (same as local) — add staging redirect URIs if needed
 - [Render](https://render.com) account (free tier works for staging)
@@ -156,7 +156,7 @@ Before inviting strangers (not on your Google OAuth test-user list):
 | 1 | `ALLOW_DEV_AUTH=false` on Render (or remove env var) |
 | 2 | Rotate `JWT_SECRET` and `ENCRYPTION_MASTER_KEY` — users must re-login / reconnect Gmail |
 | 3 | Complete [Google OAuth verification](./GOOGLE_OAUTH_VERIFICATION.md) |
-| 4 | Set `CORS_ORIGINS` to your app / web origins (optional but recommended) |
+| 4 | Set `CORS_ORIGINS` to comma-separated origins (e.g. `https://returnrider.app`) — API warns if unset in production |
 | 5 | Confirm UptimeRobot or Render Starter keeps API awake |
 | 6 | `PLAID_ENV=production` only when ready for real bank links |
 
@@ -175,3 +175,4 @@ API logs a startup **warning** if `ALLOW_DEV_AUTH=true` while `NODE_ENV=producti
 | Timeouts keep happening | Confirm `apps/mobile/.env` uses `https://returnrider-api.onrender.com/api/v1` (not `localhost` or old LAN IP) |
 | Gmail token exchange fails | `GOOGLE_CLIENT_ID` / `SECRET` match mobile client |
 | Sync not running | Check `REDIS_URL`; Upstash must allow BullMQ connections |
+| `/health` shows `degraded` | `checks.database` or `checks.redis` failed — fix Neon / Upstash URLs |
