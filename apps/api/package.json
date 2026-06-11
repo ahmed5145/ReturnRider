@@ -11,7 +11,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma db push",
     "prisma:studio": "prisma studio",
-    "test": "npx --yes tsx --test src/parsers/parsers.test.ts src/common/timezone-schedule.test.ts"
+    "test": "npx --yes tsx --test src/parsers/parsers.test.ts src/parsers/parse-blocklist.test.ts src/common/timezone-schedule.test.ts"
   },
   "dependencies": {
     "@nestjs/bullmq": "^10.2.1",

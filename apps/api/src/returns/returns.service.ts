@@ -5,6 +5,7 @@ import { guessCarrier } from '../common/carrier-guess';
 import { computeSnoozeDeadline } from '../common/snooze-utils';
 import { NotificationSchedulerService } from '../notifications/notification-scheduler.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ParseBlocklistService } from '../parsers/parse-blocklist.service';
 import { parseReceiptFromOcrText } from '../parsers/receipt-text.parser';
 
 export interface ManualReturnDto {
@@ -22,6 +23,7 @@ export class ReturnsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationScheduler: NotificationSchedulerService,
+    private readonly parseBlocklist: ParseBlocklistService,
   ) {}
 
   private async finalizeReturn(
@@ -544,6 +546,10 @@ export class ReturnsService {
         reason,
       },
     });
+
+    if (reason === 'not_a_return') {
+      this.parseBlocklist.invalidateUser(userId);
+    }
 
     const removable: ReturnStatus[] = [
       ReturnStatus.draft,

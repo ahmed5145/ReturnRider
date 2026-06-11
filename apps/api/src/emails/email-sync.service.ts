@@ -19,6 +19,7 @@ import { NotificationSchedulerService } from '../notifications/notification-sche
 import { PrismaService } from '../prisma/prisma.service';
 import { explainParseConfidence } from '../common/parse-confidence';
 import { ConfirmParseReviewDto } from './dto/confirm-parse-review.dto';
+import { ParseBlocklistService } from '../parsers/parse-blocklist.service';
 import { GmailService } from './gmail.service';
 
 const REVIEW_THRESHOLD = 0.85;
@@ -32,6 +33,7 @@ export class EmailSyncService {
     private readonly crypto: CryptoService,
     private readonly gmail: GmailService,
     private readonly notificationScheduler: NotificationSchedulerService,
+    private readonly parseBlocklist: ParseBlocklistService,
     @InjectQueue('email-sync') private readonly emailSyncQueue: Queue,
   ) {}
 
@@ -254,6 +256,10 @@ export class EmailSyncService {
     const emailDate = parseGmailInternalDate(raw.internalDate);
     const parsed = parseReceipt({ from, subject, htmlBody: html, textBody: text, emailDate });
     if (!parsed) {
+      return { reviewQueued: false, returnCreated: false };
+    }
+
+    if (await this.parseBlocklist.isMerchantBlocked(userId, parsed.merchantName)) {
       return { reviewQueued: false, returnCreated: false };
     }
 
