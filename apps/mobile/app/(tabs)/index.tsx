@@ -63,8 +63,8 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [reviewPending, setReviewPending] = useState(0);
   const [inboxSyncing, setInboxSyncing] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
   const [linkedCount, setLinkedCount] = useState(0);
   const [linkedEmails, setLinkedEmails] = useState<LinkedEmailSyncInfo[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all_active');
@@ -85,7 +85,6 @@ export default function HomeScreen() {
         router.replace('/welcome');
         return;
       }
-      setReviewPending(me.review_pending_count ?? 0);
       setInboxSyncing(me.inbox_syncing ?? false);
       setLinkedCount(me.linked_emails?.length ?? 0);
       setLinkedEmails(me.linked_emails ?? []);
@@ -130,6 +129,18 @@ export default function HomeScreen() {
       void load().catch(() => {});
     }, [statusFilter]),
   );
+
+  const syncAllNow = async () => {
+    setSyncingAll(true);
+    try {
+      await api.syncAllEmails();
+      await load(true);
+    } catch (e) {
+      Alert.alert('Sync failed', formatNetworkError(e));
+    } finally {
+      setSyncingAll(false);
+    }
+  };
 
   const quickSnooze = async (id: string) => {
     setSnoozingId(id);
@@ -184,17 +195,20 @@ export default function HomeScreen() {
       )}
 
       {syncHealth && (
-        <Link href="/(tabs)/settings" asChild>
-          <Pressable
-            style={[
-              styles.syncHealthBanner,
-              syncHealth.level === 'error' && styles.syncHealthBannerError,
-            ]}
-          >
-            <Text style={styles.syncHealthTitle}>{syncHealth.title}</Text>
-            <Text style={styles.syncHealthDetail}>{syncHealth.detail}</Text>
+        <View
+          style={[
+            styles.syncHealthBanner,
+            syncHealth.level === 'error' && styles.syncHealthBannerError,
+          ]}
+        >
+          <Text style={styles.syncHealthTitle}>{syncHealth.title}</Text>
+          <Text style={styles.syncHealthDetail}>{syncHealth.detail}</Text>
+          <Pressable onPress={syncAllNow} disabled={syncingAll} style={styles.syncHealthBtn}>
+            <Text style={styles.syncHealthBtnText}>
+              {syncingAll ? 'Syncing…' : 'Sync now'}
+            </Text>
           </Pressable>
-        </Link>
+        </View>
       )}
 
       {nextUp && nextUp.days_remaining != null && nextUp.days_remaining <= 7 && (
@@ -255,19 +269,6 @@ export default function HomeScreen() {
             </Text>
           )}
         </View>
-      )}
-
-      {reviewPending > 0 && statusFilter !== 'completed' && (
-        <Link href="/parse-review" asChild>
-          <Pressable style={styles.reviewBanner}>
-            <Text style={styles.reviewBannerTitle}>
-              {reviewPending} email{reviewPending === 1 ? '' : 's'} to review
-            </Text>
-            <Text style={styles.reviewBannerSub}>
-              Confirm real return receipts only — dismiss marketing mail
-            </Text>
-          </Pressable>
-        </Link>
       )}
 
       <Text style={styles.subtitle}>
@@ -396,6 +397,15 @@ function createStyles(colors: ThemeColors) {
   },
   syncHealthTitle: { color: colors.text, fontWeight: '600', fontSize: 14 },
   syncHealthDetail: { color: colors.textMuted, fontSize: 12, marginTop: 4, lineHeight: 17 },
+  syncHealthBtn: {
+    alignSelf: 'flex-start',
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    backgroundColor: colors.accentSoft,
+  },
+  syncHealthBtnText: { color: colors.accent, fontWeight: '700', fontSize: 13 },
   heroCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 16,
@@ -423,16 +433,6 @@ function createStyles(colors: ThemeColors) {
     textAlign: 'center',
     marginTop: 14,
   },
-  reviewBanner: {
-    backgroundColor: colors.bgCard,
-    borderRadius: 12,
-    padding: 14,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: colors.accent,
-  },
-  reviewBannerTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
-  reviewBannerSub: { color: colors.textMuted, fontSize: 13, marginTop: 4 },
   subtitle: { fontSize: 14, color: colors.textMuted, marginBottom: 8, marginTop: 12 },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   filterChip: {

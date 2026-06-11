@@ -53,14 +53,19 @@ export default function SettingsScreen() {
   const [referralInput, setReferralInput] = useState('');
   const [referralLoading, setReferralLoading] = useState(false);
   const [serverPlaidReady, setServerPlaidReady] = useState<boolean | null>(null);
+  const [reviewPending, setReviewPending] = useState(0);
+  const [blockedMerchants, setBlockedMerchants] = useState<
+    Array<{ merchant_name: string; email_subject: string | null }>
+  >([]);
 
   const load = async () => {
     try {
       await ensureAuthToken();
-      const [res, me, health] = await Promise.all([
+      const [res, me, health, blocked] = await Promise.all([
         api.listEmails(),
         api.getMe(),
         fetchApiHealth().catch(() => null),
+        api.getBlockedMerchants().catch(() => ({ data: [] })),
       ]);
       setServerPlaidReady(health?.features?.plaid ?? null);
       setEmails(res.data);
@@ -69,6 +74,8 @@ export default function SettingsScreen() {
       setReferralCode(me.referral_code ?? null);
       setReferralsCount(me.referrals_count ?? 0);
       setReferredApplied(!!me.referred_by_applied);
+      setReviewPending(me.review_pending_count ?? 0);
+      setBlockedMerchants(blocked.data);
     } catch (e) {
       Alert.alert('Could not load settings', formatNetworkError(e));
     } finally {
@@ -95,6 +102,17 @@ export default function SettingsScreen() {
   const disconnect = async (id: string) => {
     await api.disconnectEmail(id);
     load();
+  };
+
+  const unblockMerchant = async (merchantName: string) => {
+    try {
+      const res = await api.unblockMerchant(merchantName);
+      if (res.unblocked) {
+        await load();
+      }
+    } catch (e) {
+      Alert.alert('Could not unblock', formatNetworkError(e));
+    }
   };
 
   const enablePush = async () => {
@@ -439,6 +457,46 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {reviewPending > 0 && (
+        <>
+          <Text style={styles.section}>Parse review</Text>
+          <View style={styles.inviteCard}>
+            <Text style={styles.inviteTitle}>
+              {reviewPending} uncertain email{reviewPending === 1 ? '' : 's'}
+            </Text>
+            <Text style={styles.hint}>
+              Confirm real returns only. Items older than 7 days auto-dismiss.
+            </Text>
+            <Link href="/parse-review" style={styles.syncLink}>
+              Review now →
+            </Link>
+          </View>
+        </>
+      )}
+
+      {blockedMerchants.length > 0 && (
+        <>
+          <Text style={styles.section}>Skipped merchants</Text>
+          <Text style={styles.hint}>
+            Generic-parser mail from these merchants is ignored after you reported &quot;Not a
+            return&quot;. Dedicated stores (Amazon, Target) are never fully blocked.
+          </Text>
+          {blockedMerchants.map((item) => (
+            <View key={item.merchant_name} style={styles.blockedCard}>
+              <Text style={styles.blockedName}>{item.merchant_name}</Text>
+              {item.email_subject && (
+                <Text style={styles.hint} numberOfLines={1}>
+                  e.g. {item.email_subject}
+                </Text>
+              )}
+              <Pressable onPress={() => unblockMerchant(item.merchant_name)}>
+                <Text style={styles.syncLink}>Unblock</Text>
+              </Pressable>
+            </View>
+          ))}
+        </>
+      )}
+
       <Text style={styles.section}>Connected emails</Text>
       <Text style={styles.hint}>
         Read-only shopping mail. Disconnect anytime.
@@ -515,6 +573,15 @@ function createStyles(colors: ThemeColors) {
   },
   syncHealthTitle: { color: colors.text, fontWeight: '600', fontSize: 15 },
   syncHealthDetail: { color: colors.textMuted, fontSize: 13, marginTop: 6, lineHeight: 18 },
+  blockedCard: {
+    backgroundColor: colors.bgCard,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  blockedName: { color: colors.text, fontWeight: '600', fontSize: 15 },
   privacyCard: {
     backgroundColor: colors.bgCard,
     borderRadius: 12,

@@ -282,6 +282,24 @@ export const api = {
   syncEmail: (id: string) =>
     request<{ status: string; sync_job_id: string }>(`/emails/${id}/sync`, { method: 'POST' }),
 
+  syncAllEmails: () =>
+    request<{ queued: number }>('/emails/sync-all', { method: 'POST' }),
+
+  getBlockedMerchants: () =>
+    request<{
+      data: Array<{
+        merchant_name: string;
+        email_subject: string | null;
+        reported_at: string;
+      }>;
+    }>('/users/me/blocked-merchants'),
+
+  unblockMerchant: (merchant_name: string) =>
+    request<{ unblocked: boolean }>('/users/me/blocked-merchants/unblock', {
+      method: 'POST',
+      body: JSON.stringify({ merchant_name }),
+    }),
+
   listParseReview: () =>
     request<{
       data: Array<{
