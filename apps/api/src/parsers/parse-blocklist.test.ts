@@ -9,4 +9,5 @@ describe('parse-blocklist', () => {
     assert.equal(normalizeMerchantName(''), null);
     assert.equal(normalizeMerchantName(undefined), null);
   });
+
 });

@@ -543,6 +543,7 @@ export class ReturnsService {
         userId,
         returnId,
         merchantName: ret.order.merchantName,
+        emailSubject: ret.order.sourceEmailSubject,
         reason,
       },
     });

@@ -88,7 +88,7 @@ npm run test
 
 - **Parse review screen** — confirm or dismiss queued items.
 - **Report misparsed** on return detail → `parse_feedback` table.
-- **`not_a_return`** → per-user merchant blocklist (`ParseBlocklistService`) skips future auto-creates for that merchant. See [GMAIL_SYNC.md](./GMAIL_SYNC.md).
+- **`not_a_return`** → per-user skip list for **generic-parser** mail only (dedicated merchants like Amazon/Target unaffected). See [GMAIL_SYNC.md](./GMAIL_SYNC.md).
 
 ---
 

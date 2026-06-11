@@ -37,6 +37,11 @@ class ApplyReferralDto {
   code!: string;
 }
 
+class UnblockMerchantDto {
+  @IsString()
+  merchant_name!: string;
+}
+
 @ApiTags('users')
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
@@ -92,6 +97,16 @@ export class UsersController {
   @Post('referral/apply')
   async applyReferral(@CurrentUser() user: User, @Body() dto: ApplyReferralDto) {
     return this.usersService.applyReferralCode(user.id, dto.code);
+  }
+
+  @Get('me/blocked-merchants')
+  async blockedMerchants(@CurrentUser() user: User) {
+    return this.usersService.listBlockedMerchants(user.id);
+  }
+
+  @Post('me/blocked-merchants/unblock')
+  async unblockMerchant(@CurrentUser() user: User, @Body() dto: UnblockMerchantDto) {
+    return this.usersService.unblockMerchant(user.id, dto.merchant_name);
   }
 
   @Delete('me')

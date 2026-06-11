@@ -1,11 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { ParseBlocklistService } from '../parsers/parse-blocklist.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 const REFERRAL_SYNC_BONUS_DAYS = 180;
+/** Matches email-sync REVIEW_AUTO_DISMISS_DAYS — items older than this are hidden from counts. */
+const REVIEW_VISIBLE_DAYS = 7;
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly parseBlocklist: ParseBlocklistService,
+  ) {}
 
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUniqueOrThrow({
@@ -29,8 +35,11 @@ export class UsersService {
       },
     });
 
+    const reviewVisibleSince = new Date(
+      Date.now() - REVIEW_VISIBLE_DAYS * 24 * 60 * 60 * 1000,
+    );
     const reviewPendingCount = await this.prisma.parseReviewQueue.count({
-      where: { userId, status: 'pending' },
+      where: { userId, status: 'pending', createdAt: { gte: reviewVisibleSince } },
     });
 
     const anySyncing = user.linkedEmails.some((e) => e.status === 'syncing');
@@ -131,6 +140,15 @@ export class UsersService {
         ...(timezone ? this.timezoneUpdate(timezone) : {}),
       },
     });
+  }
+
+  async listBlockedMerchants(userId: string) {
+    const data = await this.parseBlocklist.listBlockedMerchants(userId);
+    return { data };
+  }
+
+  async unblockMerchant(userId: string, merchantName: string) {
+    return this.parseBlocklist.unblockMerchant(userId, merchantName);
   }
 
   async setTimezone(userId: string, timezone: string) {

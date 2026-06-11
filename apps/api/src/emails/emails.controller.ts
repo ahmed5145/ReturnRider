@@ -26,6 +26,13 @@ export class EmailsController {
     return this.emailsService.listLinked(user.id);
   }
 
+  @Post('sync-all')
+  @HttpCode(202)
+  @ApiOperation({ summary: 'Trigger re-sync for all linked inboxes' })
+  async syncAll(@CurrentUser() user: User) {
+    return this.emailsService.triggerSyncAll(user.id);
+  }
+
   @Post(':id/sync')
   @HttpCode(202)
   @ApiOperation({ summary: 'Trigger a manual inbox re-sync' })

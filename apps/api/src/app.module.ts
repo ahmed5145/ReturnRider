@@ -27,6 +27,7 @@ import { WalletModule } from './wallet/wallet.module';
         url: process.env.REDIS_URL ?? 'redis://localhost:6379',
       },
     }),
+    BullModule.registerQueue({ name: 'email-sync' }),
     PrismaModule,
     AuthModule,
     EmailsModule,

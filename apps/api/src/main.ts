@@ -6,6 +6,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { rawBody: true });
   const corsOrigins = process.env.CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean);
+  if (process.env.NODE_ENV === 'production' && !corsOrigins?.length) {
+    console.warn(
+      '[ReturnRider] CORS_ORIGINS not set — allowing all origins. Set a comma-separated allowlist before public launch.',
+    );
+  }
   app.enableCors({
     origin: corsOrigins?.length ? corsOrigins : true,
     credentials: true,

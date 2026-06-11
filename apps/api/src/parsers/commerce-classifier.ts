@@ -34,7 +34,10 @@ const RETURN_KEYWORDS =
 
 /** Marketing, account, and non-purchase mail — never parse as returns. */
 const PROMO_EXCLUDE =
-  /promotional credit|gift card balance|newsletter|recommendation|deal of|%\s*off|marketing|survey|review your purchase|rate your|password|sign[- ]?in|verify your|security alert|unsubscribe|view in browser|daily digest|weekly digest|abandoned cart|items? (you|we) (love|picked)|still interested|price drop|back in stock|members? only|exclusive offer|flash sale|clearance event/i;
+  /promotional credit|gift card balance|newsletter|recommendation|deal of the day|deal of|%\s*off|save up to|shop now|limited time|ends tonight|your daily|picked for you|deals for you|top deals|amazon recommends|sponsored|marketing|survey|review your purchase|rate your|password|sign[- ]?in|verify your|security alert|unsubscribe|view in browser|daily digest|weekly digest|abandoned cart|items? (you|we) (love|picked)|still interested|price drop|back in stock|members? only|exclusive offer|flash sale|clearance event|last chance|don't miss|trending now|new arrivals|shop our|special offer/i;
+
+const MARKETING_SENDER =
+  /(?:^|[<\s])(?:deals|marketing|promo|newsletter|offers|sale)@/i;
 
 const SHIPPED_ONLY_SUBJECT =
   /^(your )?(package|order|item).*(shipped|on the way|out for delivery|has shipped|is on its way)/i;
@@ -51,7 +54,13 @@ export type EmailIntent =
 
 export function isPromotionalOrNonReturnEmail(from: string, subject: string): boolean {
   const combined = `${from} ${subject}`.toLowerCase();
-  return PROMO_EXCLUDE.test(combined);
+  if (PROMO_EXCLUDE.test(combined)) {
+    return true;
+  }
+  if (MARKETING_SENDER.test(from) && !isReturnRelatedSubject(subject)) {
+    return true;
+  }
+  return false;
 }
 
 export function isReturnRelatedSubject(subject: string): boolean {

@@ -39,6 +39,32 @@ describe('commerce-classifier', () => {
     );
   });
 
+  it('blocks marketing sender without return keywords', () => {
+    assert.equal(
+      isPromotionalOrNonReturnEmail('deals@amazon.com', 'Top deals for you this week'),
+      true,
+    );
+    assert.equal(
+      isCommerceEmail('deals@amazon.com', 'Your return label is ready'),
+      true,
+    );
+  });
+
+  it('blocks walmart promo but accepts order confirm', () => {
+    assert.equal(isCommerceEmail('noreply@walmart.com', 'Save up to 50% — shop now'), false);
+    assert.equal(
+      isCommerceEmail('help@walmart.com', 'Thanks for your order #1234567890'),
+      true,
+    );
+  });
+
+  it('blocks nike newsletter subjects', () => {
+    assert.equal(
+      isPromotionalOrNonReturnEmail('noreply@nike.com', 'New arrivals — shop our latest'),
+      true,
+    );
+  });
+
   it('classifies shipped vs order confirm', () => {
     assert.equal(classifyEmailIntent('Your package has shipped'), 'shipped');
     assert.equal(classifyEmailIntent('Thank you for your order'), 'order_confirm');
@@ -74,6 +100,37 @@ describe('parseReceipt', () => {
         subject: 'Deal of the day — 40% off',
         htmlBody: 'Order #111-2222222-3333333',
         textBody: 'Order #111-2222222-3333333',
+      }),
+    );
+    assert.equal(result, null);
+  });
+
+  it('parses Amazon order confirmation with email date', () => {
+    const emailDate = new Date('2024-03-01T10:00:00.000Z');
+    const result = parseReceipt(
+      sample({
+        from: 'order-update@amazon.com',
+        subject: 'Your Amazon.com order',
+        htmlBody:
+          'Order #111-2222222-3333333 Total $29.99 Thank you for your order confirmation',
+        textBody:
+          'Order #111-2222222-3333333 Total $29.99 Thank you for your order confirmation',
+        emailDate,
+      }),
+    );
+    assert.ok(result);
+    assert.equal(result.merchantName, 'Amazon');
+    assert.ok(result.orderDate);
+    assert.equal(result.orderDate.getTime(), emailDate.getTime());
+  });
+
+  it('skips best buy shipped notification', () => {
+    const result = parseReceipt(
+      sample({
+        from: 'noreply@bestbuy.com',
+        subject: 'Your package has shipped',
+        htmlBody: 'Order #BBY01-123456789 tracking 1Z999',
+        textBody: 'Order #BBY01-123456789 tracking 1Z999',
       }),
     );
     assert.equal(result, null);

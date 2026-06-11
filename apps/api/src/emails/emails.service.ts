@@ -89,9 +89,15 @@ export class EmailsService {
 
     const data = await Promise.all(
       emails.map(async (e) => {
+        const reviewVisibleSince = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const [reviewPendingCount, returnsFromInbox] = await Promise.all([
           this.prisma.parseReviewQueue.count({
-            where: { linkedEmailId: e.id, userId, status: 'pending' },
+            where: {
+              linkedEmailId: e.id,
+              userId,
+              status: 'pending',
+              createdAt: { gte: reviewVisibleSince },
+            },
           }),
           this.prisma.order.count({
             where: { linkedEmailId: e.id, userId },
@@ -115,6 +121,10 @@ export class EmailsService {
     );
 
     return { data };
+  }
+
+  async triggerSyncAll(userId: string) {
+    return this.emailSync.enqueueUserLinkedSyncs(userId);
   }
 
   async triggerSync(userId: string, linkedEmailId: string) {
