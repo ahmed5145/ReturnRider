@@ -14,7 +14,7 @@
     "test": "npx --yes tsx --test src/parsers/parsers.test.ts src/parsers/parse-blocklist.test.ts src/common/timezone-schedule.test.ts"
   },
   "dependencies": {
-    "@nestjs/bullmq": "^10.2.1",
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^10.4.15",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.4.15",
